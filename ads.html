@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Neon Trivia — Quiz Arcade</title>
+
+<!-- Telegram Mini Apps SDK (required) -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- Adsgram SDK (required for ad monetization) -->
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0a0b16;
+    --bg-2:#0f1128;
+    --surface:#171a37;
+    --surface-2:#20244c;
+    --border:rgba(255,255,255,.08);
+    --primary:#8b5cf6;
+    --primary-2:#6d28d9;
+    --primary-glow:rgba(139,92,246,.45);
+    --gold:#fdb750;
+    --gold-glow:rgba(253,183,80,.5);
+    --success:#34d399;
+    --danger:#fb7185;
+    --text:#f4f2ff;
+    --text-dim:#9694b8;
+    --text-faint:#605d80;
+    --radius:18px;
+    --font-display:'Sora',sans-serif;
+    --font-body:'Inter',sans-serif;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(139,92,246,.18), transparent 45%),
+      radial-gradient(circle at 90% 15%, rgba(253,183,80,.10), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:16px 16px 28px;
+    position:relative;
+  }
+
+  .screen{ display:none; flex-direction:column; flex:1; animation:fadeIn .35s ease; }
+  .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  h1,h2,h3{ font-family:var(--font-display); margin:0; letter-spacing:-.01em; }
+
+  /* ---------- Top stat bar ---------- */
+  .statbar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:10px 14px;
+    margin-bottom:18px;
+  }
+  .stat{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:14px; }
+  .stat .ico{ font-size:16px; }
+  .stat.coins{ color:var(--gold); }
+  .stat.streak{ color:var(--success); }
+
+  /* ---------- Home screen ---------- */
+  .brand{ text-align:center; margin:6px 0 22px; }
+  .brand .logo{
+    font-size:15px; text-transform:uppercase; letter-spacing:.28em;
+    color:var(--text-faint); font-weight:600; margin-bottom:6px;
+  }
+  .brand h1{
+    font-size:32px; font-weight:800;
+    background:linear-gradient(120deg,#fff 10%, var(--primary) 55%, var(--gold) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brand p{ color:var(--text-dim); font-size:13px; margin-top:6px; }
+
+  .section-label{
+    font-size:12px; text-transform:uppercase; letter-spacing:.14em;
+    color:var(--text-faint); font-weight:700; margin:4px 0 12px;
+  }
+
+  /* honeycomb category grid — signature element */
+  .hive{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:14px 10px;
+    margin-bottom:8px;
+  }
+  .hex{
+    position:relative;
+    aspect-ratio:.92;
+    clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    background:linear-gradient(160deg, var(--surface-2), var(--surface));
+    border:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease;
+    padding:8px;
+  }
+  .hex:active{ transform:scale(.94); }
+  .hex.selected{
+    box-shadow:0 0 0 2px var(--primary), 0 0 22px var(--primary-glow);
+    background:linear-gradient(160deg, rgba(139,92,246,.28), var(--surface));
+  }
+  .hex .emoji{ font-size:26px; }
+  .hex .name{ font-size:11px; font-weight:700; text-align:center; color:var(--text); line-height:1.15; }
+
+  .mixed-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(90deg, rgba(253,183,80,.14), rgba(139,92,246,.10));
+    border:1px solid var(--border); border-radius:20px;
+    padding:15px 17px; margin:14px 0 16px; cursor:pointer;
+  }
+  .mixed-row .l{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:14px; }
+  .mixed-row .l .ico{ font-size:20px; }
+  .mixed-row .r{ color:var(--text-dim); font-size:18px; }
+
+  .btn{
+    border:none; border-radius:22px; padding:16px 20px;
+    font-family:var(--font-body); font-weight:700; font-size:15px;
+    cursor:pointer; width:100%; transition:transform .12s ease, opacity .15s ease, box-shadow .25s ease;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    position:relative;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn.primary{
+    background:linear-gradient(120deg, var(--primary), var(--primary-2));
+    color:#fff;
+    box-shadow:0 8px 26px -8px var(--primary-glow), 0 0 0 1px rgba(255,255,255,.06) inset;
+    animation:glowPulsePrimary 2.8s ease-in-out infinite;
+  }
+  .btn.gold{
+    background:linear-gradient(120deg, var(--gold), #e2942f);
+    color:#1a1200;
+    box-shadow:0 8px 26px -8px var(--gold-glow), 0 0 0 1px rgba(255,255,255,.08) inset;
+    animation:glowPulseGold 2.8s ease-in-out infinite;
+  }
+  .btn.ghost{ background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:20px; }
+  .btn.small{ padding:11px 16px; font-size:13px; border-radius:16px; animation:none; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; animation:none; box-shadow:none; }
+
+  @keyframes glowPulsePrimary{
+    0%,100%{ box-shadow:0 8px 26px -8px var(--primary-glow), 0 0 0 1px rgba(255,255,255,.06) inset; }
+    50%{ box-shadow:0 10px 34px -6px var(--primary-glow), 0 0 26px rgba(139,92,246,.45), 0 0 0 1px rgba(255,255,255,.08) inset; }
+  }
+  @keyframes glowPulseGold{
+    0%,100%{ box-shadow:0 8px 26px -8px var(--gold-glow), 0 0 0 1px rgba(255,255,255,.08) inset; }
+    50%{ box-shadow:0 10px 34px -6px var(--gold-glow), 0 0 26px rgba(253,183,80,.5), 0 0 0 1px rgba(255,255,255,.08) inset; }
+  }
+
+  /* ---------- Earn coins card (rewarded video entry point) ---------- */
+  .earn-card{
+    position:relative; overflow:hidden; display:flex; align-items:center; gap:14px;
+    background:linear-gradient(120deg, rgba(139,92,246,.16), rgba(253,183,80,.10));
+    border:1px solid rgba(139,92,246,.35); border-radius:20px;
+    padding:16px; margin-bottom:16px; cursor:pointer;
+    box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 10px 30px -14px rgba(139,92,246,.5);
+    animation:earnGlow 3s ease-in-out infinite;
+  }
+  .earn-card:active{ transform:scale(.98); }
+  @keyframes earnGlow{
+    0%,100%{ box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 10px 30px -14px rgba(139,92,246,.5); }
+    50%{ box-shadow:0 0 0 1px rgba(255,255,255,.05) inset, 0 14px 38px -10px rgba(139,92,246,.75); }
+  }
+  .earn-glow{
+    position:absolute; top:-40%; left:-10%; width:60%; height:180%;
+    background:radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
+    transform:rotate(20deg); pointer-events:none;
+  }
+  .earn-ico{
+    width:42px; height:42px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(140deg, var(--primary), var(--primary-2));
+    display:flex; align-items:center; justify-content:center; font-size:17px;
+    box-shadow:0 0 18px var(--primary-glow);
+  }
+  .earn-txt{ flex:1; }
+  .earn-txt b{ display:block; font-size:13.5px; }
+  .earn-txt span{ font-size:11px; color:var(--text-dim); }
+  .earn-arrow{
+    font-family:var(--font-display); font-weight:800; font-size:15px; color:var(--gold);
+    background:rgba(253,183,80,.12); border:1px solid rgba(253,183,80,.3);
+    border-radius:12px; padding:6px 10px;
+  }
+
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ flex:1; }
+
+  .spacer{ flex:1; }
+
+  .footnote{
+    text-align:center; color:var(--text-faint); font-size:11px; margin-top:14px; line-height:1.5;
+  }
+  .footnote button{ background:none; border:none; color:var(--text-dim); text-decoration:underline; font-size:11px; cursor:pointer; padding:0; }
+
+  /* ---------- Quiz screen ---------- */
+  .quiz-top{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .ring-wrap{ position:relative; width:56px; height:56px; flex-shrink:0; }
+  .ring-wrap svg{ transform:rotate(-90deg); width:56px; height:56px; }
+  .ring-wrap circle{ fill:none; stroke-width:5; }
+  .ring-bg{ stroke:var(--surface-2); }
+  .ring-fg{ stroke:var(--primary); stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
+  .ring-num{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; }
+
+  .quiz-meta{ flex:1; }
+  .progress-track{ height:6px; border-radius:6px; background:var(--surface-2); overflow:hidden; margin-bottom:6px; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--primary), var(--gold)); transition:width .35s ease; }
+  .meta-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); font-weight:600; }
+
+  .lives{ display:flex; gap:3px; font-size:15px; }
+  .lives .dead{ opacity:.25; filter:grayscale(1); }
+
+  .qcard{
+    background:linear-gradient(160deg, var(--surface-2), var(--surface));
+    border:1px solid var(--border); border-radius:24px;
+    padding:28px 22px; margin-bottom:18px; min-height:110px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 14px 40px -18px rgba(139,92,246,.55);
+  }
+  .qcard h2{ font-size:19px; font-weight:700; line-height:1.4; }
+  .qcard .cat-tag{
+    position:absolute; margin-top:-58px; font-size:11px; font-weight:700;
+    color:var(--gold); text-transform:uppercase; letter-spacing:.1em;
+  }
+
+  .options{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .opt{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px;
+    padding:16px 17px; font-size:14px; font-weight:600; text-align:left; cursor:pointer;
+    display:flex; align-items:center; gap:12px; transition:background .15s ease, border-color .15s ease, transform .1s ease, box-shadow .2s ease;
+  }
+  .opt:active{ transform:scale(.98); }
+  .opt .letter{
+    width:28px; height:28px; border-radius:10px; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
+    color:var(--text-dim); flex-shrink:0;
+  }
+  .opt.correct{ border-color:var(--success); background:rgba(52,211,153,.14); box-shadow:0 0 22px -6px rgba(52,211,153,.55); }
+  .opt.correct .letter{ background:var(--success); color:#06281c; }
+  .opt.wrong{ border-color:var(--danger); background:rgba(251,113,133,.14); box-shadow:0 0 22px -6px rgba(251,113,133,.55); }
+  .opt.wrong .letter{ background:var(--danger); color:#2c0810; }
+  .opt.disabled-opt{ opacity:.4; pointer-events:none; }
+  .opt.locked{ pointer-events:none; }
+
+  .hint-row{ display:flex; gap:10px; margin-bottom:6px; }
+  .hint-btn{
+    flex:1; background:var(--surface); border:1px dashed var(--border); border-radius:16px;
+    padding:11px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .hint-btn .cost{ color:var(--gold); }
+  .hint-btn.ad{ color:var(--primary); border-color:rgba(139,92,246,.4); }
+
+  /* ---------- Results / Game Over ---------- */
+  .result-hero{ text-align:center; padding:26px 10px 10px; }
+  .result-hero .big-emoji{ font-size:52px; display:block; margin-bottom:8px; }
+  .result-hero h2{ font-size:24px; }
+  .result-hero p{ color:var(--text-dim); font-size:13px; margin-top:6px; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:22px 0; }
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:16px; text-align:center;
+  }
+  .stat-card .val{ font-family:var(--font-display); font-size:22px; font-weight:800; }
+  .stat-card .lbl{ font-size:11px; color:var(--text-dim); margin-top:4px; text-transform:uppercase; letter-spacing:.08em; }
+
+  .ad-offer{
+    background:linear-gradient(120deg, rgba(253,183,80,.14), rgba(139,92,246,.08));
+    border:1px solid rgba(253,183,80,.35); border-radius:20px; padding:17px;
+    display:flex; align-items:center; gap:12px; margin-bottom:16px;
+    box-shadow:0 10px 30px -16px rgba(253,183,80,.6);
+  }
+  .ad-offer .ico{ font-size:26px; }
+  .ad-offer .txt{ flex:1; }
+  .ad-offer .txt b{ font-size:13px; display:block; }
+  .ad-offer .txt span{ font-size:11px; color:var(--text-dim); }
+
+  /* ---------- Modal (settings/info) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(5,5,15,.7); backdrop-filter:blur(4px);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .modal-overlay.active{ display:flex; }
+  .modal{
+    background:var(--bg-2); border:1px solid var(--border); border-radius:22px 22px 0 0;
+    max-width:520px; width:100%; padding:22px 20px 30px; max-height:80vh; overflow-y:auto;
+  }
+  .modal h3{ font-size:17px; margin-bottom:14px; }
+  .modal p{ font-size:13px; color:var(--text-dim); line-height:1.6; margin:0 0 10px; }
+  .modal .close-x{
+    float:right; background:var(--surface); border:none; color:var(--text-dim);
+    width:30px; height:30px; border-radius:50%; font-size:14px; cursor:pointer;
+  }
+
+  .icon-btn{
+    background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
+    width:36px; height:36px; border-radius:11px; display:flex; align-items:center;
+    justify-content:center; font-size:16px; cursor:pointer;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:12px 18px; border-radius:14px; font-size:13px; font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:all .25s ease;
+    z-index:80; display:flex; align-items:center; gap:8px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ HOME SCREEN ============ -->
+  <section class="screen active" id="screen-home">
+    <div class="statbar">
+      <div class="stat coins"><span class="ico">🪙</span><span id="home-coins">0</span></div>
+      <div class="stat streak"><span class="ico">🔥</span><span id="home-streak">0</span> day streak</div>
+      <button class="icon-btn" onclick="openModal('info')">ⓘ</button>
+    </div>
+
+    <div class="brand">
+      <div class="logo">Quiz Arcade</div>
+      <h1>Neon Trivia</h1>
+      <p>Pick a category and test your brain across six worlds of knowledge.</p>
+    </div>
+
+    <div class="section-label">Choose a category</div>
+    <div class="hive" id="category-hive"></div>
+
+    <div class="mixed-row" id="mixed-mode">
+      <div class="l"><span class="ico">🎲</span> Mixed Rounds — a bit of everything</div>
+      <div class="r">›</div>
+    </div>
+
+    <div class="earn-card" onclick="watchAdEarnCoins()">
+      <div class="earn-glow"></div>
+      <div class="earn-ico">▶️</div>
+      <div class="earn-txt">
+        <b>Watch an ad, earn 50 coins</b>
+        <span>100% optional — every category stays free either way</span>
+      </div>
+      <div class="earn-arrow">+50</div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="btn primary" id="btn-start-home" style="display:none;" onclick="startRound()">
+      Play <span id="start-cat-label"></span>
+    </div>
+
+    <div class="footnote">
+      High score: <b id="home-highscore">0</b> · Ads are always optional — you can play every category for free.
+      <br><button onclick="openModal('info')">About &amp; ad settings</button>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ SCREEN ============ -->
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-top">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 56 56">
+          <circle class="ring-bg" cx="28" cy="28" r="24"></circle>
+          <circle class="ring-fg" id="timer-ring" cx="28" cy="28" r="24"></circle>
+        </svg>
+        <div class="ring-num" id="timer-num">15</div>
+      </div>
+      <div class="quiz-meta">
+        <div class="progress-track"><div class="progress-fill" id="quiz-progress"></div></div>
+        <div class="meta-row">
+          <span id="quiz-qnum">Q1 / 10</span>
+          <span id="quiz-score">Score: 0</span>
+          <span class="lives" id="quiz-lives"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-tag" id="quiz-cat-tag">SCIENCE</div>
+    <div class="qcard"><h2 id="quiz-question">Loading question…</h2></div>
+
+    <div class="options" id="quiz-options"></div>
+
+    <div class="hint-row">
+      <button class="hint-btn" id="hint-coin-btn" onclick="useHint('coins')">🎯 50/50 <span class="cost">30🪙</span></button>
+      <button class="hint-btn ad" id="hint-ad-btn" onclick="useHint('ad')">▶️ Watch ad for 50/50 (free)</button>
+    </div>
+    <div class="footnote">Streak x<span id="quiz-multiplier">1</span> multiplier active</div>
+  </section>
+
+  <!-- ============ RESULTS SCREEN ============ -->
+  <section class="screen" id="screen-results">
+    <div class="result-hero">
+      <span class="big-emoji" id="result-emoji">🏆</span>
+      <h2 id="result-title">Round complete!</h2>
+      <p id="result-sub">Nice work — here's how you did.</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val" id="res-score">0</div><div class="lbl">Score</div></div>
+      <div class="stat-card"><div class="val" id="res-coins">+0</div><div class="lbl">Coins earned</div></div>
+      <div class="stat-card"><div class="val" id="res-correct">0/10</div><div class="lbl">Correct</div></div>
+      <div class="stat-card"><div class="val" id="res-best">0</div><div class="lbl">Best streak</div></div>
+    </div>
+
+    <div class="ad-offer" id="double-coins-offer">
+      <div class="ico">🪙</div>
+      <div class="txt"><b>Double your coins</b><span>Watch a short rewarded ad — completely optional</span></div>
+      <button class="btn gold small" style="width:auto;" onclick="watchAdDoubleCoins()">Watch</button>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn primary" onclick="playAgainSameCategory()">Play again</button>
+      <button class="btn ghost" onclick="goHome()">Home</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME OVER SCREEN ============ -->
+  <section class="screen" id="screen-gameover">
+    <div class="spacer"></div>
+    <div class="result-hero">
+      <span class="big-emoji">💔</span>
+      <h2>Out of lives</h2>
+      <p>You answered <b id="go-correct">0</b> questions correctly this round.</p>
+    </div>
+
+    <div class="ad-offer">
+      <div class="ico">❤️</div>
+      <div class="txt"><b>Refill your lives</b><span>Watch a rewarded ad to keep this round going — totally optional</span></div>
+      <button class="btn gold small" style="width:auto;" onclick="watchAdRefillLives()">Watch</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goHome()">Return home for free</button>
+    </div>
+    <div class="spacer"></div>
+  </section>
+
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   NEON TRIVIA — Telegram Mini App
+   Single-file build: HTML + CSS + JS
+   Ad network: Adsgram (https://adsgram.ai)
+   ============================================================ */
+
+/* ---------------------------------------------------------------
+   ADSGRAM CONFIG
+   Block type: Reward (Video). One block powers every optional
+   reward moment in the app (hints, bonus coins, life refills).
+   Docs: https://docs.adsgram.ai/publisher/get-block-id
+--------------------------------------------------------------- */
+const ADSGRAM_BLOCK_ID_REWARDED = "37388";
+
+// Debug mode shows Adsgram's test creative instead of a real ad and logs
+// verbose output to the console. Turned OFF now that a real block ID is
+// wired in — flip back to true only if you need to debug locally again.
+const ADSGRAM_DEBUG = false;
+
+let rewardedController = null;
+
+function initAdsgram(){
+  if (!window.Adsgram) { console.warn("Adsgram SDK not loaded (offline / blocked script)."); return; }
+  try {
+    rewardedController = window.Adsgram.init({
+      blockId: ADSGRAM_BLOCK_ID_REWARDED,
+      debug: ADSGRAM_DEBUG,
+      debugBannerType: "RewardedVideo"
+    });
+  } catch(e){ console.warn("Adsgram rewarded init failed", e); }
+}
+
+/**
+ * Shows a rewarded ad. onReward fires ONLY if the user watches to completion.
+ * onSkip/onError fire otherwise — in every case the app must keep working,
+ * per Adsgram's moderation rule that core features never require ads.
+ */
+function showRewardedAd(onReward, onSkipOrError){
+  if (!rewardedController){
+    toast("Ads unavailable right now — try again later.");
+    onSkipOrError && onSkipOrError();
+    return;
+  }
+  rewardedController.show()
+    .then(() => { onReward && onReward(); })
+    .catch((result) => {
+      console.log("Rewarded ad not completed:", result);
+      onSkipOrError && onSkipOrError();
+    });
+}
+
+/* ---------------------------------------------------------------
+   TELEGRAM MINI APP SDK SETUP
+--------------------------------------------------------------- */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+function initTelegram(){
+  if (!tg) return;
+  tg.ready();
+  tg.expand();
+  try { tg.disableVerticalSwipes(); } catch(e){}
+  try { tg.setHeaderColor("#0a0b16"); } catch(e){}
+  try { tg.setBackgroundColor("#0a0b16"); } catch(e){}
+  try { tg.enableClosingConfirmation(); } catch(e){}
+  tg.BackButton.onClick(() => {
+    if (currentScreen === "quiz" || currentScreen === "results" || currentScreen === "gameover"){
+      goHome();
+    }
+  });
+}
+
+function haptic(type){
+  if (!tg || !tg.HapticFeedback) return;
+  try {
+    if (type === "success" || type === "error" || type === "warning"){
+      tg.HapticFeedback.notificationOccurred(type);
+    } else {
+      tg.HapticFeedback.impactOccurred(type || "light");
+    }
+  } catch(e){}
+}
+
+function updateBackButton(){
+  if (!tg) return;
+  if (currentScreen === "home") tg.BackButton.hide();
+  else tg.BackButton.show();
+}
+
+/* ---------------------------------------------------------------
+   QUESTION BANK
+--------------------------------------------------------------- */
+const CATEGORIES = [
+  { id:"science",  name:"Science",     emoji:"🧬" },
+  { id:"history",  name:"History",     emoji:"🏛️" },
+  { id:"pop",      name:"Pop Culture", emoji:"🎬" },
+  { id:"geo",      name:"Geography",   emoji:"🌍" },
+  { id:"crypto",   name:"Crypto/Tech", emoji:"🪙" },
+  { id:"sports",   name:"Sports",      emoji:"⚽" },
+];
+
+const QUESTIONS = {
+  science:[
+    ["What is the powerhouse of the cell?",["Nucleus","Mitochondria","Ribosome","Golgi apparatus"],1],
+    ["What is the chemical symbol for gold?",["Ag","Au","Gd","Go"],1],
+    ["Which planet is closest to the Sun?",["Venus","Mercury","Earth","Mars"],1],
+    ["Which gas do plants absorb for photosynthesis?",["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],2],
+    ["How many bones does an adult human body have?",["186","206","226","246"],1],
+    ["Roughly how fast does light travel?",["150,000 km/s","300,000 km/s","450,000 km/s","600,000 km/s"],1],
+    ["What is the largest organ of the human body?",["Liver","Heart","Skin","Lungs"],2],
+    ["What is the chemical formula for water?",["CO2","H2O","O2","NaCl"],1],
+    ["What is the hardest naturally occurring substance?",["Quartz","Diamond","Iron","Granite"],1],
+    ["How many chambers does the human heart have?",["2","3","4","5"],2],
+    ["What process do plants use to make food from sunlight?",["Respiration","Photosynthesis","Fermentation","Digestion"],1],
+    ["Which gas makes up most of Earth's atmosphere?",["Oxygen","Nitrogen","Carbon dioxide","Argon"],1],
+    ["What is the scientific study of living organisms called?",["Geology","Biology","Astronomy","Chemistry"],1],
+    ["What is the freezing point of water in Celsius?",["-10°C","0°C","10°C","32°C"],1],
+    ["Which force pulls objects toward the Earth?",["Magnetism","Friction","Gravity","Inertia"],2],
+    ["What is considered the basic unit of life?",["Atom","Molecule","Cell","Tissue"],2],
+  ],
+  history:[
+    ["In what year did World War II end?",["1943","1944","1945","1946"],2],
+    ["Who was the first President of the United States?",["Thomas Jefferson","John Adams","George Washington","Abraham Lincoln"],2],
+    ["The Great Wall was built primarily in which country?",["Japan","China","Mongolia","Korea"],1],
+    ["What writing system did ancient Egyptians use?",["Cuneiform","Hieroglyphics","Sanskrit","Runes"],1],
+    ["In what year did the Titanic sink?",["1905","1912","1918","1923"],1],
+    ["In which country did the Renaissance begin?",["France","Italy","Spain","Germany"],1],
+    ["Who painted the Mona Lisa?",["Michelangelo","Raphael","Leonardo da Vinci","Donatello"],2],
+    ["In what year did the Berlin Wall fall?",["1985","1987","1989","1991"],2],
+    ["Which ancient wonder is located in Giza?",["Colossus of Rhodes","The Great Pyramid","Hanging Gardens","Lighthouse of Alexandria"],1],
+    ["Who was known as the 'Maid of Orleans'?",["Marie Antoinette","Joan of Arc","Catherine the Great","Eleanor of Aquitaine"],1],
+    ["Who was the first man to walk on the Moon?",["Buzz Aldrin","Yuri Gagarin","Neil Armstrong","John Glenn"],2],
+    ["What was the capital of the Roman Empire?",["Athens","Rome","Constantinople","Carthage"],1],
+    ["The Cold War was primarily between the USA and which nation?",["China","Soviet Union","Germany","Japan"],1],
+    ["In what year did the French Revolution begin?",["1776","1789","1799","1804"],1],
+    ["Which ancient civilization built the Colosseum?",["Greek","Egyptian","Roman","Persian"],2],
+    ["In what year was the US Declaration of Independence signed?",["1770","1776","1783","1789"],1],
+  ],
+  pop:[
+    ["Which streaming platform released 'Stranger Things'?",["Hulu","Netflix","Disney+","Amazon Prime"],1],
+    ["Which superhero is known as the 'Man of Steel'?",["Batman","Superman","Iron Man","Thor"],1],
+    ["Which band released the album 'Abbey Road'?",["The Rolling Stones","The Beatles","Queen","Led Zeppelin"],1],
+    ["What is the name of the wizarding school in Harry Potter?",["Hogwarts","Narnia Academy","Xavier's School","Brakebills"],0],
+    ["What is the name of the Simpsons' fictional hometown?",["Shelbyville","Springfield","Ogdenville","Capital City"],1],
+    ["Which Pixar film explores emotions inside a girl's mind?",["Soul","Inside Out","Coco","Up"],1],
+    ["Which actor plays Iron Man in the Marvel films?",["Chris Evans","Chris Hemsworth","Robert Downey Jr.","Mark Ruffalo"],2],
+    ["Which artist released the album 'Thriller'?",["Prince","Michael Jackson","Stevie Wonder","Lionel Richie"],1],
+    ["Which show is set in the fictional land of Westeros?",["Vikings","Game of Thrones","The Witcher","House of the Dragon"],1],
+    ["Which game franchise features a character named Mario?",["Sonic","Super Mario","Zelda","Kirby"],1],
+    ["Which singer is known as the 'Queen of Pop'?",["Beyoncé","Madonna","Rihanna","Lady Gaga"],1],
+    ["Which film features the line 'May the Force be with you'?",["Star Trek","Star Wars","Guardians of the Galaxy","Dune"],1],
+    ["Which K-pop group released the hit song 'Dynamite'?",["BLACKPINK","BTS","EXO","Twice"],1],
+    ["Which app popularized short looping videos and dance trends?",["Instagram","TikTok","Snapchat","YouTube"],1],
+    ["Who plays Hermione Granger in the Harry Potter films?",["Emma Stone","Emma Watson","Emma Roberts","Emily Blunt"],1],
+    ["Which streaming service produced 'The Crown'?",["HBO","Netflix","Apple TV+","Hulu"],1],
+  ],
+  geo:[
+    ["Which is the largest country in the world by area?",["Canada","China","USA","Russia"],3],
+    ["Which river is traditionally cited as the world's longest?",["Amazon","Nile","Yangtze","Mississippi"],1],
+    ["What is the smallest country in the world?",["Monaco","San Marino","Vatican City","Liechtenstein"],2],
+    ["What is the capital of Japan?",["Osaka","Kyoto","Tokyo","Nagoya"],2],
+    ["Which continent was historically nicknamed the 'Dark Continent'?",["Asia","Africa","South America","Australia"],1],
+    ["The Sahara Desert is located mainly on which continent?",["Asia","Africa","Australia","South America"],1],
+    ["Mount Everest is located in which country?",["India","Nepal","China","Bhutan"],1],
+    ["Which country is famously shaped like a boot?",["Spain","Italy","Greece","Portugal"],1],
+    ["The Great Barrier Reef is located near which country?",["Philippines","Australia","Indonesia","Fiji"],1],
+    ["What is the capital city of Canada?",["Toronto","Vancouver","Ottawa","Montreal"],2],
+    ["Which is the largest ocean on Earth?",["Atlantic","Indian","Pacific","Arctic"],2],
+    ["Which country is home to the Eiffel Tower?",["Italy","France","Spain","Belgium"],1],
+    ["The Amazon Rainforest is primarily located in which country?",["Peru","Colombia","Brazil","Venezuela"],2],
+    ["How many continents are there on Earth?",["5","6","7","8"],2],
+    ["Which country is known as the 'Land of the Rising Sun'?",["China","Japan","South Korea","Thailand"],1],
+    ["Which is the largest hot desert in the world?",["Gobi","Kalahari","Sahara","Arabian"],2],
+  ],
+  crypto:[
+    ["Who is credited as Bitcoin's pseudonymous creator?",["Vitalik Buterin","Satoshi Nakamoto","Elon Musk","Charlie Lee"],1],
+    ["What is Bitcoin's maximum supply cap?",["18 million","21 million","100 million","Unlimited"],1],
+    ["Which blockchain platform is known for smart contracts?",["Bitcoin","Ethereum","Litecoin","Cardano"],1],
+    ["What term describes a unique digital collectible token?",["DEX","NFT","DAO","ICO"],1],
+    ["What is the name of Telegram's own blockchain token?",["TRON","TON","XRP","ADA"],1],
+    ["In crypto slang, 'HODL' originated from a misspelling of which word?",["Hold","Sell","Trade","Mine"],0],
+    ["What does 'CPU' stand for?",["Computer Personal Unit","Central Processing Unit","Central Program Utility","Core Processing Unit"],1],
+    ["What does 'www' stand for?",["World Wide Web","Wide World Web","World Web Wide","Web World Wide"],0],
+    ["Which company created the iPhone?",["Samsung","Google","Apple","Microsoft"],2],
+    ["What does 'AI' commonly stand for?",["Automated Interface","Artificial Intelligence","Applied Informatics","Automatic Input"],1],
+    ["What is a decentralized application commonly called?",["bApp","dApp","xApp","cApp"],1],
+    ["What core technology underlies most cryptocurrencies?",["Cloud computing","Blockchain","Quantum computing","Neural networks"],1],
+    ["Google was co-founded by Larry Page and which other person?",["Elon Musk","Sergey Brin","Steve Jobs","Bill Gates"],1],
+    ["What does 'URL' stand for?",["Universal Reference Link","Uniform Resource Locator","United Resource Locator","Unified Retrieval Link"],1],
+    ["What is the term for actively buying and selling crypto assets?",["Mining","Staking","Trading","Farming"],2],
+    ["Which messaging app has its own integrated crypto wallet ecosystem?",["WhatsApp","Telegram","Signal","Discord"],1],
+  ],
+  sports:[
+    ["Which sport is nicknamed 'the beautiful game'?",["Basketball","Football/Soccer","Tennis","Cricket"],1],
+    ["How many players are on a standard soccer team on the field?",["9","10","11","12"],2],
+    ["Which country has won the most FIFA World Cups?",["Germany","Argentina","Brazil","Italy"],2],
+    ["Which sport is Wimbledon associated with?",["Golf","Tennis","Cricket","Rugby"],1],
+    ["The Olympic Games are held every how many years?",["2","3","4","5"],2],
+    ["Which sport uses a 'birdie' and a racket?",["Squash","Badminton","Tennis","Table Tennis"],1],
+    ["What is the standard height of a basketball hoop, in feet?",["8","9","10","12"],2],
+    ["Which sport is known as 'America's pastime'?",["Basketball","Baseball","Football","Hockey"],1],
+    ["How many players are on a basketball team on the court?",["4","5","6","7"],1],
+    ["Which Grand Slam tennis tournament is played on clay courts?",["Wimbledon","US Open","French Open","Australian Open"],2],
+    ["Which sport uses a shuttlecock?",["Tennis","Badminton","Squash","Volleyball"],1],
+    ["Which country is credited with inventing cricket?",["Australia","India","England","South Africa"],2],
+    ["In golf, one stroke under par on a hole is called a:",["Eagle","Bogey","Birdie","Par"],2],
+    ["Which of these is NOT a Summer Olympics event?",["Swimming","Athletics","Skiing","Gymnastics"],2],
+    ["How many rings appear on the Olympic flag?",["4","5","6","7"],1],
+    ["Cycling is the core sport of which famous multi-stage race?",["Tour de France","Iron Man","Grand Prix","Ashes Series"],0],
+  ],
+};
+
+/* ---------------------------------------------------------------
+   STATE
+--------------------------------------------------------------- */
+const STORAGE_KEY = "neon_trivia_state_v1";
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e){}
+  return { coins:150, highScore:0, streakDays:1, lastPlayedISO:null, roundsCompleted:0 };
+}
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+
+let state = loadState();
+applyDailyStreak();
+
+function applyDailyStreak(){
+  const today = new Date().toDateString();
+  if (state.lastPlayedISO !== today){
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    state.streakDays = (state.lastPlayedISO === yesterday) ? (state.streakDays||0) + 1 : 1;
+    state.lastPlayedISO = today;
+    saveState();
+  }
+}
+
+let currentScreen = "home";
+let selectedCategory = null; // null = mixed
+let round = null; // { questions:[], index, score, lives, correctCount, bestStreak, currentStreak, timer }
+
+/* ---------------------------------------------------------------
+   NAVIGATION
+--------------------------------------------------------------- */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + id).classList.add("active");
+  currentScreen = id;
+  updateBackButton();
+}
+
+function goHome(){
+  clearInterval(questionTimerHandle);
+  renderHome();
+  showScreen("home");
+}
+
+/* ---------------------------------------------------------------
+   HOME SCREEN
+--------------------------------------------------------------- */
+function renderHome(){
+  document.getElementById("home-coins").textContent = state.coins;
+  document.getElementById("home-streak").textContent = state.streakDays;
+  document.getElementById("home-highscore").textContent = state.highScore;
+
+  const hive = document.getElementById("category-hive");
+  hive.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const el = document.createElement("div");
+    el.className = "hex" + (selectedCategory === cat.id ? " selected" : "");
+    el.innerHTML = `<span class="emoji">${cat.emoji}</span><span class="name">${cat.name}</span>`;
+    el.onclick = () => {
+      selectedCategory = (selectedCategory === cat.id) ? null : cat.id;
+      haptic("light");
+      renderHome();
+    };
+    hive.appendChild(el);
+  });
+
+  const startBtn = document.getElementById("btn-start-home");
+  const label = document.getElementById("start-cat-label");
+  const mixedRow = document.getElementById("mixed-mode");
+  mixedRow.style.boxShadow = selectedCategory === null && wasMixedTapped ? "0 0 0 2px var(--primary)" : "none";
+
+  if (selectedCategory){
+    const cat = CATEGORIES.find(c => c.id === selectedCategory);
+    label.textContent = "· " + cat.name;
+    startBtn.style.display = "flex";
+  } else if (wasMixedTapped){
+    label.textContent = "· Mixed";
+    startBtn.style.display = "flex";
+  } else {
+    startBtn.style.display = "none";
+  }
+}
+
+/**
+ * Home screen "Watch an ad, earn 50 coins" — fully optional, always
+ * available regardless of category chosen, never gates any content.
+ */
+function watchAdEarnCoins(){
+  showRewardedAd(() => {
+    state.coins += 50;
+    saveState();
+    renderHome();
+    toast("+50 coins added! 🪙");
+  }, () => { toast("Ad skipped — no coins added."); });
+}
+
+let wasMixedTapped = false;
+document.getElementById("mixed-mode").onclick = () => {
+  selectedCategory = null;
+  wasMixedTapped = true;
+  haptic("light");
+  renderHome();
+};
+
+/* ---------------------------------------------------------------
+   ROUND LOGIC
+--------------------------------------------------------------- */
+function buildQuestionPool(catId){
+  if (catId){
+    return shuffle([...QUESTIONS[catId]]).slice(0, 10).map(q => ({...toQObj(q), category:catId}));
+  }
+  // mixed: pull from all categories
+  let pool = [];
+  CATEGORIES.forEach(c => {
+    QUESTIONS[c.id].forEach(q => pool.push({...toQObj(q), category:c.id}));
+  });
+  return shuffle(pool).slice(0, 10);
+}
+function toQObj(arr){ return { text:arr[0], options:[...arr[1]], correct:arr[2] }; }
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+
+function startRound(){
+  wasMixedTapped = wasMixedTapped && selectedCategory === null;
+  round = {
+    questions: buildQuestionPool(selectedCategory),
+    index: 0,
+    score: 0,
+    lives: 3,
+    correctCount: 0,
+    bestStreak: 0,
+    currentStreak: 0,
+    hintUsedThisQ: false,
+  };
+  showScreen("quiz");
+  renderQuestion();
+}
+
+function playAgainSameCategory(){ startRound(); }
+
+let questionTimerHandle = null;
+const QUESTION_SECONDS = 15;
+const RING_CIRC = 2 * Math.PI * 24;
+
+function renderQuestion(){
+  clearInterval(questionTimerHandle);
+  const q = round.questions[round.index];
+  const cat = CATEGORIES.find(c => c.id === q.category);
+  round.hintUsedThisQ = false;
+  round.timeLeft = QUESTION_SECONDS;
+
+  document.getElementById("quiz-cat-tag").textContent = cat ? cat.name.toUpperCase() : "TRIVIA";
+  document.getElementById("quiz-question").textContent = q.text;
+  document.getElementById("quiz-qnum").textContent = `Q${round.index+1} / ${round.questions.length}`;
+  document.getElementById("quiz-score").textContent = `Score: ${round.score}`;
+  document.getElementById("quiz-multiplier").textContent = Math.min(1 + Math.floor(round.currentStreak/3), 4);
+  document.getElementById("quiz-progress").style.width = `${(round.index/round.questions.length)*100}%`;
+  document.getElementById("hint-coin-btn").disabled = false;
+  document.getElementById("hint-ad-btn").disabled = false;
+
+  renderLives();
+
+  const ring = document.getElementById("timer-ring");
+  ring.style.strokeDasharray = RING_CIRC;
+  ring.style.stroke = "var(--primary)";
+  const numEl = document.getElementById("timer-num");
+
+  const optionsEl = document.getElementById("quiz-options");
+  optionsEl.innerHTML = "";
+  const letters = ["A","B","C","D"];
+  q.options.forEach((opt, i) => {
+    const el = document.createElement("div");
+    el.className = "opt";
+    el.dataset.index = i;
+    el.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+    el.onclick = () => selectAnswer(i);
+    optionsEl.appendChild(el);
+  });
+
+  questionTimerHandle = setInterval(() => {
+    round.timeLeft -= 1;
+    const pct = round.timeLeft / QUESTION_SECONDS;
+    ring.style.strokeDashoffset = RING_CIRC * (1 - pct);
+    numEl.textContent = round.timeLeft;
+    if (round.timeLeft <= 5) ring.style.stroke = "var(--danger)";
+    if (round.timeLeft <= 0){
+      clearInterval(questionTimerHandle);
+      selectAnswer(-1); // timeout = wrong
+    }
+  }, 1000);
+  // set initial dashoffset
+  ring.style.strokeDashoffset = 0;
+}
+
+function renderLives(){
+  const el = document.getElementById("quiz-lives");
+  let out = "";
+  for (let i=0;i<3;i++){ out += `<span class="${i < round.lives ? "" : "dead"}">❤️</span>`; }
+  el.innerHTML = out;
+}
+
+function selectAnswer(i){
+  clearInterval(questionTimerHandle);
+  const q = round.questions[round.index];
+  const optionsEl = document.getElementById("quiz-options");
+  const opts = [...optionsEl.children];
+  opts.forEach(o => o.classList.add("locked"));
+
+  const isCorrect = i === q.correct;
+  opts[q.correct] && opts[q.correct].classList.add("correct");
+  if (!isCorrect && i >= 0 && opts[i]) opts[i].classList.add("wrong");
+
+  if (isCorrect){
+    haptic("success");
+    round.currentStreak += 1;
+    round.bestStreak = Math.max(round.bestStreak, round.currentStreak);
+    const multiplier = Math.min(1 + Math.floor((round.currentStreak-1)/3), 4);
+    round.score += 100 * multiplier;
+    round.correctCount += 1;
+  } else {
+    haptic("error");
+    round.currentStreak = 0;
+    round.lives -= 1;
+    renderLives();
+  }
+
+  setTimeout(() => {
+    if (round.lives <= 0){
+      endRoundGameOver();
+    } else if (round.index + 1 >= round.questions.length){
+      endRoundSuccess();
+    } else {
+      round.index += 1;
+      renderQuestion();
+    }
+  }, 900);
+}
+
+/* ---------------------------------------------------------------
+   HINTS (optional — coins OR a rewarded ad; never required)
+--------------------------------------------------------------- */
+function useHint(mode){
+  if (round.hintUsedThisQ) return;
+  const apply = () => {
+    round.hintUsedThisQ = true;
+    const q = round.questions[round.index];
+    const optionsEl = document.getElementById("quiz-options");
+    const opts = [...optionsEl.children];
+    const wrongIdxs = [0,1,2,3].filter(i => i !== q.correct);
+    shuffle(wrongIdxs).slice(0,2).forEach(i => {
+      opts[i].classList.add("disabled-opt");
+      opts[i].onclick = null;
+    });
+    document.getElementById("hint-coin-btn").disabled = true;
+    document.getElementById("hint-ad-btn").disabled = true;
+  };
+
+  if (mode === "coins"){
+    if (state.coins < 30){ toast("Not enough coins — try the free ad option!"); return; }
+    state.coins -= 30; saveState(); renderHome();
+    apply();
+  } else {
+    showRewardedAd(() => { toast("Ad complete — hint unlocked!"); apply(); },
+                    () => { toast("Ad skipped — no hint given."); });
+  }
+}
+
+/* ---------------------------------------------------------------
+   RESULTS / GAME OVER
+--------------------------------------------------------------- */
+let pendingCoinsAwarded = 0;
+
+function endRoundSuccess(){
+  const coinsEarned = Math.round(round.score / 10);
+  pendingCoinsAwarded = coinsEarned;
+  state.coins += coinsEarned;
+  state.highScore = Math.max(state.highScore, round.score);
+  state.roundsCompleted = (state.roundsCompleted||0) + 1;
+  saveState();
+
+  document.getElementById("result-emoji").textContent = round.correctCount >= 8 ? "🏆" : round.correctCount >= 5 ? "🎉" : "🙂";
+  document.getElementById("result-title").textContent = round.correctCount >= 8 ? "Outstanding round!" : "Round complete!";
+  document.getElementById("res-score").textContent = round.score;
+  document.getElementById("res-coins").textContent = "+" + coinsEarned;
+  document.getElementById("res-correct").textContent = `${round.correctCount}/${round.questions.length}`;
+  document.getElementById("res-best").textContent = round.bestStreak;
+  document.getElementById("double-coins-offer").style.display = "flex";
+
+  showScreen("results");
+}
+
+function watchAdDoubleCoins(){
+  showRewardedAd(() => {
+    state.coins += pendingCoinsAwarded;
+    saveState();
+    document.getElementById("res-coins").textContent = "+" + (pendingCoinsAwarded*2);
+    document.getElementById("double-coins-offer").style.display = "none";
+    toast("Coins doubled! 🪙");
+  }, () => { toast("Ad skipped — coins unchanged."); });
+}
+
+function endRoundGameOver(){
+  document.getElementById("go-correct").textContent = round.correctCount;
+  showScreen("gameover");
+}
+
+function watchAdRefillLives(){
+  showRewardedAd(() => {
+    round.lives = 3;
+    toast("Lives refilled — back in the game!");
+    showScreen("quiz");
+    renderQuestion();
+  }, () => { toast("Ad skipped — lives not refilled."); });
+}
+
+/* ---------------------------------------------------------------
+   MODAL / INFO
+--------------------------------------------------------------- */
+function openModal(kind){
+  const body = document.getElementById("modal-body");
+  if (kind === "info"){
+    body.innerHTML = `
+      <h3>About Neon Trivia</h3>
+      <p>Every category, every round, and the full quiz experience are free to play — nothing is ever locked behind an ad.</p>
+      <p>Ads in this app are always optional and always your choice: watch one to earn free coins any time, unlock a 50/50 hint, double your round's coins, or refill your lives after a loss. Skipping an ad never blocks you from continuing — you can always return home or keep playing for free.</p>
+      <p>Ads only ever appear when you tap a "Watch ad" button yourself — never automatically, and never mid-question.</p>
+    `;
+  }
+  document.getElementById("modal-overlay").classList.add("active");
+}
+function closeModal(){ document.getElementById("modal-overlay").classList.remove("active"); }
+
+/* ---------------------------------------------------------------
+   TOAST
+--------------------------------------------------------------- */
+let toastTimeout;
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+/* ---------------------------------------------------------------
+   BOOT
+--------------------------------------------------------------- */
+initTelegram();
+initAdsgram();
+renderHome();
+</script>
+</body>
+</html>
