@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Neon Trivia — Quiz Arcade</title>
+<title>Trivia Vault — Quiz & Rewards</title>
 
 <!-- Telegram Mini Apps SDK (required) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -16,48 +16,47 @@
 
 <style>
   :root{
-    --bg:#0a0b16;
-    --bg-2:#0f1128;
-    --surface:#171a37;
-    --surface-2:#20244c;
-    --border:rgba(255,255,255,.08);
-    --primary:#8b5cf6;
-    --primary-2:#6d28d9;
-    --primary-glow:rgba(139,92,246,.45);
-    --gold:#fdb750;
-    --gold-glow:rgba(253,183,80,.5);
-    --success:#34d399;
-    --danger:#fb7185;
-    --text:#f4f2ff;
-    --text-dim:#9694b8;
-    --text-faint:#605d80;
-    --radius:18px;
+    --bg:#0b0e16;
+    --bg-2:#10131e;
+    --panel:#161b29;
+    --panel-2:#1e2438;
+    --border:rgba(242,184,75,.14);
+
+    --accent:#f2b84b;
+    --accent-deep:#c98a1f;
+    --accent-glow:rgba(242,184,75,.45);
+
+    --gold:#f2b84b;
+    --gold-glow:rgba(242,184,75,.5);
+    --emerald:#35d08f;
+    --ruby:#ef5a72;
+
+    --text:#f4f1ea;
+    --text-dim:#9aa0b4;
+    --text-faint:#5b6072;
+
     --font-display:'Sora',sans-serif;
     --font-body:'Inter',sans-serif;
   }
+  body.skin-emerald{ --accent:#35d08f; --accent-deep:#1f9e6c; --accent-glow:rgba(53,208,143,.45); }
+  body.skin-sapphire{ --accent:#4f8dfd; --accent-deep:#2f66c9; --accent-glow:rgba(79,141,253,.45); }
+  body.skin-violet{ --accent:#9b7bff; --accent-deep:#6d4fd1; --accent-glow:rgba(155,123,255,.45); }
 
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{
     margin:0;
     background:
-      radial-gradient(circle at 15% 0%, rgba(139,92,246,.18), transparent 45%),
-      radial-gradient(circle at 90% 15%, rgba(253,183,80,.10), transparent 40%),
+      radial-gradient(circle at 15% 0%, var(--accent-glow), transparent 45%),
+      radial-gradient(circle at 90% 15%, rgba(242,184,75,.08), transparent 40%),
       var(--bg);
     color:var(--text);
     font-family:var(--font-body);
     overflow-x:hidden;
     min-height:100vh;
+    transition:background .4s ease;
   }
-  #app{
-    max-width:520px;
-    margin:0 auto;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    padding:16px 16px 28px;
-    position:relative;
-  }
+  #app{ max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; padding:16px 16px 28px; position:relative; }
 
   .screen{ display:none; flex-direction:column; flex:1; animation:fadeIn .35s ease; }
   .screen.active{ display:flex; }
@@ -66,262 +65,152 @@
   h1,h2,h3{ font-family:var(--font-display); margin:0; letter-spacing:-.01em; }
 
   /* ---------- Top stat bar ---------- */
-  .statbar{
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:10px 14px;
-    margin-bottom:18px;
-  }
+  .statbar{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:10px 14px; margin-bottom:18px; }
   .stat{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:14px; }
-  .stat .ico{ font-size:16px; }
   .stat.coins{ color:var(--gold); }
-  .stat.streak{ color:var(--success); }
+  .stat.streak{ color:var(--emerald); }
+  .icon-btn{ background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim); width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex-shrink:0; }
 
-  /* ---------- Home screen ---------- */
-  .brand{ text-align:center; margin:6px 0 22px; }
-  .brand .logo{
-    font-size:15px; text-transform:uppercase; letter-spacing:.28em;
-    color:var(--text-faint); font-weight:600; margin-bottom:6px;
-  }
-  .brand h1{
-    font-size:32px; font-weight:800;
-    background:linear-gradient(120deg,#fff 10%, var(--primary) 55%, var(--gold) 100%);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
-  .brand p{ color:var(--text-dim); font-size:13px; margin-top:6px; }
+  /* ---------- Vault hero ---------- */
+  .vault-hero{ display:flex; flex-direction:column; align-items:center; margin:6px 0 20px; }
+  .vault-ring{ position:relative; width:120px; height:120px; border-radius:50%; background:var(--panel); box-shadow:0 0 0 3px var(--accent), 0 0 34px -6px var(--accent-glow); display:flex; align-items:center; justify-content:center; animation:vaultBreathe 3.2s ease-in-out infinite; }
+  @keyframes vaultBreathe{ 0%,100%{ box-shadow:0 0 0 3px var(--accent), 0 0 30px -8px var(--accent-glow);} 50%{ box-shadow:0 0 0 3px var(--accent), 0 0 46px -4px var(--accent-glow);} }
+  .vault-ring .vault-coin{ font-size:34px; filter:drop-shadow(0 0 8px var(--accent-glow)); }
+  .vault-balance{ font-family:var(--font-display); font-weight:800; font-size:32px; margin-top:12px; }
+  .vault-label{ font-size:11px; color:var(--text-faint); letter-spacing:.1em; margin-top:2px; }
+  .vault-tagline{ font-size:12px; color:var(--text-dim); margin-top:8px; text-align:center; }
 
-  .section-label{
-    font-size:12px; text-transform:uppercase; letter-spacing:.14em;
-    color:var(--text-faint); font-weight:700; margin:4px 0 12px;
-  }
+  .section-label{ font-size:12px; color:var(--text-faint); font-weight:700; margin:4px 0 10px; }
 
-  /* honeycomb category grid — signature element */
-  .hive{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:14px 10px;
-    margin-bottom:8px;
-  }
-  .hex{
-    position:relative;
-    aspect-ratio:.92;
-    clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    background:linear-gradient(160deg, var(--surface-2), var(--surface));
-    border:1px solid var(--border);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:6px; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease;
-    padding:8px;
-  }
+  /* ---------- Daily vault strip ---------- */
+  .vault-strip-wrap{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .vault-strip-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .vault-strip-head h4{ font-size:13px; font-weight:700; }
+  .vault-strip-head span{ font-size:11px; color:var(--text-faint); }
+  .vault-strip{ display:flex; gap:5px; margin-bottom:12px; }
+  .vault-pip{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:7px 2px; border-radius:10px; background:var(--panel-2); }
+  .vault-pip.current{ background:color-mix(in srgb, var(--accent) 22%, var(--panel-2)); box-shadow:0 0 0 1px var(--accent) inset; }
+  .vault-pip.past{ opacity:.55; }
+  .vault-pip .ico{ font-size:14px; }
+  .vault-pip .amt{ font-size:8.5px; font-weight:700; color:var(--text-faint); }
+
+  /* ---------- Buttons ---------- */
+  .btn{ border:none; border-radius:20px; padding:15px 18px; font-family:var(--font-body); font-weight:700; font-size:14.5px; cursor:pointer; width:100%; transition:transform .12s ease, opacity .15s ease; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active{ transform:scale(.96); }
+  .btn.primary{ background:linear-gradient(120deg, var(--accent), var(--accent-deep)); color:#1a1200; box-shadow:0 8px 24px -8px var(--accent-glow); }
+  .btn.gold{ background:linear-gradient(120deg, var(--gold), #c98a1f); color:#1a1200; }
+  .btn.ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn.small{ padding:10px 15px; font-size:12.5px; border-radius:14px; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; transform:none; }
+
+  /* ---------- Two-up action row ---------- */
+  .action-row{ display:flex; gap:10px; margin-bottom:16px; }
+  .action-card{ flex:1; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:13px 12px; display:flex; align-items:center; gap:9px; cursor:pointer; }
+  .action-card:active{ transform:scale(.97); }
+  .action-card .ico{ font-size:21px; }
+  .action-card .a-txt b{ display:block; font-size:12px; }
+  .action-card .a-txt span{ font-size:10px; color:var(--text-dim); }
+
+  /* ---------- Category hive ---------- */
+  .hive{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px 10px; margin-bottom:8px; }
+  .hex{ position:relative; aspect-ratio:.92; clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background:var(--panel-2); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease; padding:8px; }
   .hex:active{ transform:scale(.94); }
-  .hex.selected{
-    box-shadow:0 0 0 2px var(--primary), 0 0 22px var(--primary-glow);
-    background:linear-gradient(160deg, rgba(139,92,246,.28), var(--surface));
-  }
+  .hex.selected{ box-shadow:0 0 0 2px var(--accent), 0 0 22px var(--accent-glow); background:color-mix(in srgb, var(--accent) 18%, var(--panel-2)); }
   .hex .emoji{ font-size:26px; }
-  .hex .name{ font-size:11px; font-weight:700; text-align:center; color:var(--text); line-height:1.15; }
+  .hex .name{ font-size:11px; font-weight:700; text-align:center; line-height:1.15; }
 
-  .mixed-row{
-    display:flex; align-items:center; justify-content:space-between;
-    background:linear-gradient(90deg, rgba(253,183,80,.14), rgba(139,92,246,.10));
-    border:1px solid var(--border); border-radius:20px;
-    padding:15px 17px; margin:14px 0 16px; cursor:pointer;
-  }
+  .mixed-row{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:15px 17px; margin:14px 0 16px; cursor:pointer; }
   .mixed-row .l{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:14px; }
-  .mixed-row .l .ico{ font-size:20px; }
   .mixed-row .r{ color:var(--text-dim); font-size:18px; }
 
-  .btn{
-    border:none; border-radius:22px; padding:16px 20px;
-    font-family:var(--font-body); font-weight:700; font-size:15px;
-    cursor:pointer; width:100%; transition:transform .12s ease, opacity .15s ease, box-shadow .25s ease;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    position:relative;
-  }
-  .btn:active{ transform:scale(.96); }
-  .btn.primary{
-    background:linear-gradient(120deg, var(--primary), var(--primary-2));
-    color:#fff;
-    box-shadow:0 8px 26px -8px var(--primary-glow), 0 0 0 1px rgba(255,255,255,.06) inset;
-    animation:glowPulsePrimary 2.8s ease-in-out infinite;
-  }
-  .btn.gold{
-    background:linear-gradient(120deg, var(--gold), #e2942f);
-    color:#1a1200;
-    box-shadow:0 8px 26px -8px var(--gold-glow), 0 0 0 1px rgba(255,255,255,.08) inset;
-    animation:glowPulseGold 2.8s ease-in-out infinite;
-  }
-  .btn.ghost{ background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:20px; }
-  .btn.small{ padding:11px 16px; font-size:13px; border-radius:16px; animation:none; }
-  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; animation:none; box-shadow:none; }
-
-  @keyframes glowPulsePrimary{
-    0%,100%{ box-shadow:0 8px 26px -8px var(--primary-glow), 0 0 0 1px rgba(255,255,255,.06) inset; }
-    50%{ box-shadow:0 10px 34px -6px var(--primary-glow), 0 0 26px rgba(139,92,246,.45), 0 0 0 1px rgba(255,255,255,.08) inset; }
-  }
-  @keyframes glowPulseGold{
-    0%,100%{ box-shadow:0 8px 26px -8px var(--gold-glow), 0 0 0 1px rgba(255,255,255,.08) inset; }
-    50%{ box-shadow:0 10px 34px -6px var(--gold-glow), 0 0 26px rgba(253,183,80,.5), 0 0 0 1px rgba(255,255,255,.08) inset; }
-  }
-
-  /* ---------- Earn coins card (rewarded video entry point) ---------- */
-  .earn-card{
-    position:relative; overflow:hidden; display:flex; align-items:center; gap:14px;
-    background:linear-gradient(120deg, rgba(139,92,246,.16), rgba(253,183,80,.10));
-    border:1px solid rgba(139,92,246,.35); border-radius:20px;
-    padding:16px; margin-bottom:16px; cursor:pointer;
-    box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 10px 30px -14px rgba(139,92,246,.5);
-    animation:earnGlow 3s ease-in-out infinite;
-  }
-  .earn-card:active{ transform:scale(.98); }
-  @keyframes earnGlow{
-    0%,100%{ box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 10px 30px -14px rgba(139,92,246,.5); }
-    50%{ box-shadow:0 0 0 1px rgba(255,255,255,.05) inset, 0 14px 38px -10px rgba(139,92,246,.75); }
-  }
-  .earn-glow{
-    position:absolute; top:-40%; left:-10%; width:60%; height:180%;
-    background:radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
-    transform:rotate(20deg); pointer-events:none;
-  }
-  .earn-ico{
-    width:42px; height:42px; border-radius:14px; flex-shrink:0;
-    background:linear-gradient(140deg, var(--primary), var(--primary-2));
-    display:flex; align-items:center; justify-content:center; font-size:17px;
-    box-shadow:0 0 18px var(--primary-glow);
-  }
-  .earn-txt{ flex:1; }
-  .earn-txt b{ display:block; font-size:13.5px; }
-  .earn-txt span{ font-size:11px; color:var(--text-dim); }
-  .earn-arrow{
-    font-family:var(--font-display); font-weight:800; font-size:15px; color:var(--gold);
-    background:rgba(253,183,80,.12); border:1px solid rgba(253,183,80,.3);
-    border-radius:12px; padding:6px 10px;
-  }
-
-  .btn-row{ display:flex; gap:10px; }
-  .btn-row .btn{ flex:1; }
-
   .spacer{ flex:1; }
-
-  .footnote{
-    text-align:center; color:var(--text-faint); font-size:11px; margin-top:14px; line-height:1.5;
-  }
+  .footnote{ text-align:center; color:var(--text-faint); font-size:11px; margin-top:14px; line-height:1.5; }
   .footnote button{ background:none; border:none; color:var(--text-dim); text-decoration:underline; font-size:11px; cursor:pointer; padding:0; }
+
+  /* ---------- Sub-screen header ---------- */
+  .subheader{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .subheader h3{ font-size:16px; }
 
   /* ---------- Quiz screen ---------- */
   .quiz-top{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
   .ring-wrap{ position:relative; width:56px; height:56px; flex-shrink:0; }
   .ring-wrap svg{ transform:rotate(-90deg); width:56px; height:56px; }
   .ring-wrap circle{ fill:none; stroke-width:5; }
-  .ring-bg{ stroke:var(--surface-2); }
-  .ring-fg{ stroke:var(--primary); stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
+  .ring-bg{ stroke:var(--panel-2); }
+  .ring-fg{ stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
   .ring-num{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; }
-
   .quiz-meta{ flex:1; }
-  .progress-track{ height:6px; border-radius:6px; background:var(--surface-2); overflow:hidden; margin-bottom:6px; }
-  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--primary), var(--gold)); transition:width .35s ease; }
+  .progress-track{ height:6px; border-radius:6px; background:var(--panel-2); overflow:hidden; margin-bottom:6px; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--accent), var(--gold)); transition:width .35s ease; }
   .meta-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); font-weight:600; }
+  .keys{ display:flex; gap:3px; font-size:15px; }
+  .keys .dead{ opacity:.25; filter:grayscale(1); }
 
-  .lives{ display:flex; gap:3px; font-size:15px; }
-  .lives .dead{ opacity:.25; filter:grayscale(1); }
-
-  .qcard{
-    background:linear-gradient(160deg, var(--surface-2), var(--surface));
-    border:1px solid var(--border); border-radius:24px;
-    padding:28px 22px; margin-bottom:18px; min-height:110px;
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 14px 40px -18px rgba(139,92,246,.55);
-  }
+  .qcard{ background:var(--panel); border:1px solid var(--border); border-radius:24px; padding:28px 22px; margin-bottom:18px; min-height:110px; display:flex; align-items:center; justify-content:center; text-align:center; }
   .qcard h2{ font-size:19px; font-weight:700; line-height:1.4; }
-  .qcard .cat-tag{
-    position:absolute; margin-top:-58px; font-size:11px; font-weight:700;
-    color:var(--gold); text-transform:uppercase; letter-spacing:.1em;
-  }
+  .cat-tag{ font-size:11px; font-weight:700; color:var(--accent); margin-bottom:-58px; }
 
   .options{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
-  .opt{
-    background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    padding:16px 17px; font-size:14px; font-weight:600; text-align:left; cursor:pointer;
-    display:flex; align-items:center; gap:12px; transition:background .15s ease, border-color .15s ease, transform .1s ease, box-shadow .2s ease;
-  }
+  .opt{ background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px 17px; font-size:14px; font-weight:600; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; transition:background .15s ease, border-color .15s ease, transform .1s ease; }
   .opt:active{ transform:scale(.98); }
-  .opt .letter{
-    width:28px; height:28px; border-radius:10px; background:var(--surface-2);
-    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
-    color:var(--text-dim); flex-shrink:0;
-  }
-  .opt.correct{ border-color:var(--success); background:rgba(52,211,153,.14); box-shadow:0 0 22px -6px rgba(52,211,153,.55); }
-  .opt.correct .letter{ background:var(--success); color:#06281c; }
-  .opt.wrong{ border-color:var(--danger); background:rgba(251,113,133,.14); box-shadow:0 0 22px -6px rgba(251,113,133,.55); }
-  .opt.wrong .letter{ background:var(--danger); color:#2c0810; }
+  .opt .letter{ width:28px; height:28px; border-radius:10px; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--text-dim); flex-shrink:0; }
+  .opt.correct{ border-color:var(--emerald); background:rgba(52,211,153,.14); }
+  .opt.correct .letter{ background:var(--emerald); color:#06281c; }
+  .opt.wrong{ border-color:var(--ruby); background:rgba(251,113,133,.14); }
+  .opt.wrong .letter{ background:var(--ruby); color:#2c0810; }
   .opt.disabled-opt{ opacity:.4; pointer-events:none; }
   .opt.locked{ pointer-events:none; }
 
   .hint-row{ display:flex; gap:10px; margin-bottom:6px; }
-  .hint-btn{
-    flex:1; background:var(--surface); border:1px dashed var(--border); border-radius:16px;
-    padding:11px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-  }
+  .hint-btn{ flex:1; background:var(--panel); border:1px dashed var(--border); border-radius:16px; padding:11px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
   .hint-btn .cost{ color:var(--gold); }
-  .hint-btn.ad{ color:var(--primary); border-color:rgba(139,92,246,.4); }
+  .hint-btn.ad{ color:var(--accent); border-color:var(--accent-glow); }
+  .hint-btn.free{ color:var(--emerald); border-color:rgba(53,208,143,.4); }
+  .hint-btn:disabled{ opacity:.4; pointer-events:none; }
 
   /* ---------- Results / Game Over ---------- */
   .result-hero{ text-align:center; padding:26px 10px 10px; }
   .result-hero .big-emoji{ font-size:52px; display:block; margin-bottom:8px; }
-  .result-hero h2{ font-size:24px; }
   .result-hero p{ color:var(--text-dim); font-size:13px; margin-top:6px; }
-
   .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:22px 0; }
-  .stat-card{
-    background:var(--surface); border:1px solid var(--border); border-radius:16px;
-    padding:16px; text-align:center;
-  }
+  .stat-card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; text-align:center; }
   .stat-card .val{ font-family:var(--font-display); font-size:22px; font-weight:800; }
-  .stat-card .lbl{ font-size:11px; color:var(--text-dim); margin-top:4px; text-transform:uppercase; letter-spacing:.08em; }
-
-  .ad-offer{
-    background:linear-gradient(120deg, rgba(253,183,80,.14), rgba(139,92,246,.08));
-    border:1px solid rgba(253,183,80,.35); border-radius:20px; padding:17px;
-    display:flex; align-items:center; gap:12px; margin-bottom:16px;
-    box-shadow:0 10px 30px -16px rgba(253,183,80,.6);
-  }
+  .stat-card .lbl{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+  .ad-offer{ background:var(--panel); border:1px solid var(--accent-glow); border-radius:20px; padding:17px; display:flex; align-items:center; gap:12px; margin-bottom:16px; }
   .ad-offer .ico{ font-size:26px; }
   .ad-offer .txt{ flex:1; }
   .ad-offer .txt b{ font-size:13px; display:block; }
   .ad-offer .txt span{ font-size:11px; color:var(--text-dim); }
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ flex:1; }
 
-  /* ---------- Modal (settings/info) ---------- */
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(5,5,15,.7); backdrop-filter:blur(4px);
-    display:none; align-items:flex-end; justify-content:center; z-index:50;
-  }
+  /* ---------- Lucky Spin ---------- */
+  .wheel-wrap{ position:relative; width:210px; height:210px; margin:14px auto 22px; }
+  .wheel-pointer{ position:absolute; top:-13px; left:50%; transform:translateX(-50%); font-size:22px; color:var(--accent); z-index:2; }
+  .wheel-disc{ width:100%; height:100%; border-radius:50%; position:relative; border:4px solid rgba(255,255,255,.10); box-shadow:0 20px 50px -20px rgba(0,0,0,.6); }
+  .wheel-seg{ position:absolute; top:50%; left:50%; width:0; height:0; }
+  .wheel-seg .lbl{ position:relative; display:inline-block; transform:translate(-50%,-50%); font-weight:800; font-size:12px; background:rgba(0,0,0,.28); padding:2px 7px; border-radius:8px; white-space:nowrap; }
+  .wheel-seg.jackpot .lbl{ background:var(--gold); color:#3a2500; }
+  .wheel-hub{ position:absolute; top:50%; left:50%; width:36px; height:36px; margin:-18px 0 0 -18px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 0 16px var(--accent-glow), 0 0 0 4px var(--bg-2); z-index:1; }
+  .spin-actions{ display:flex; flex-direction:column; gap:10px; }
+
+  /* ---------- Shop ---------- */
+  .shop-grid{ display:flex; flex-direction:column; gap:10px; }
+  .shop-item{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px; display:flex; align-items:center; gap:12px; }
+  .shop-item .ico{ font-size:24px; width:34px; text-align:center; flex-shrink:0; }
+  .shop-item .s-txt{ flex:1; }
+  .shop-item .s-txt b{ display:block; font-size:13px; }
+  .shop-item .s-txt span{ font-size:11px; color:var(--text-dim); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(5,5,15,.7); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; z-index:50; }
   .modal-overlay.active{ display:flex; }
-  .modal{
-    background:var(--bg-2); border:1px solid var(--border); border-radius:22px 22px 0 0;
-    max-width:520px; width:100%; padding:22px 20px 30px; max-height:80vh; overflow-y:auto;
-  }
+  .modal{ background:var(--bg-2); border:1px solid var(--border); border-radius:22px 22px 0 0; max-width:520px; width:100%; padding:22px 20px 30px; max-height:80vh; overflow-y:auto; }
   .modal h3{ font-size:17px; margin-bottom:14px; }
   .modal p{ font-size:13px; color:var(--text-dim); line-height:1.6; margin:0 0 10px; }
-  .modal .close-x{
-    float:right; background:var(--surface); border:none; color:var(--text-dim);
-    width:30px; height:30px; border-radius:50%; font-size:14px; cursor:pointer;
-  }
+  .modal .close-x{ float:right; background:var(--panel); border:none; color:var(--text-dim); width:30px; height:30px; border-radius:50%; font-size:14px; cursor:pointer; }
 
-  .icon-btn{
-    background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
-    width:36px; height:36px; border-radius:11px; display:flex; align-items:center;
-    justify-content:center; font-size:16px; cursor:pointer;
-  }
-
-  .toast{
-    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
-    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
-    padding:12px 18px; border-radius:14px; font-size:13px; font-weight:600;
-    box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:all .25s ease;
-    z-index:80; display:flex; align-items:center; gap:8px;
-  }
+  .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:12px 18px; border-radius:14px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:all .25s ease; z-index:80; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
@@ -331,33 +220,44 @@
   <!-- ============ HOME SCREEN ============ -->
   <section class="screen active" id="screen-home">
     <div class="statbar">
-      <div class="stat coins"><span class="ico">🪙</span><span id="home-coins">0</span></div>
-      <div class="stat streak"><span class="ico">🔥</span><span id="home-streak">0</span> day streak</div>
+      <div class="stat coins">🪙 <span id="home-coins">0</span></div>
+      <div class="stat streak">🔥 <span id="home-streak">0</span> day streak</div>
       <button class="icon-btn" onclick="openModal('info')">ⓘ</button>
     </div>
 
-    <div class="brand">
-      <div class="logo">Quiz Arcade</div>
-      <h1>Neon Trivia</h1>
-      <p>Pick a category and test your brain across six worlds of knowledge.</p>
+    <div class="vault-hero">
+      <div class="vault-ring"><span class="vault-coin">🪙</span></div>
+      <div class="vault-balance" id="hero-coins">0</div>
+      <div class="vault-label">VAULT BALANCE</div>
+      <div class="vault-tagline">Answer questions, spin the wheel, and stock your vault.</div>
+    </div>
+
+    <div class="vault-strip-wrap">
+      <div class="vault-strip-head">
+        <h4>Daily Vault</h4>
+        <span id="vault-day-label">Day 1 of 7</span>
+      </div>
+      <div class="vault-strip" id="vault-strip"></div>
+      <button class="btn gold small" id="vault-claim-btn" onclick="claimVault()">Claim</button>
+    </div>
+
+    <div class="action-row">
+      <div class="action-card" onclick="openWheel()">
+        <span class="ico">🎡</span>
+        <div class="a-txt"><b>Lucky Spin</b><span id="spin-status-home">1 free spin</span></div>
+      </div>
+      <div class="action-card" onclick="openShop()">
+        <span class="ico">🛒</span>
+        <div class="a-txt"><b>Rewards Shop</b><span>Spend your coins</span></div>
+      </div>
     </div>
 
     <div class="section-label">Choose a category</div>
     <div class="hive" id="category-hive"></div>
 
     <div class="mixed-row" id="mixed-mode">
-      <div class="l"><span class="ico">🎲</span> Mixed Rounds — a bit of everything</div>
+      <div class="l">🎲 Mixed Rounds — a bit of everything</div>
       <div class="r">›</div>
-    </div>
-
-    <div class="earn-card" onclick="watchAdEarnCoins()">
-      <div class="earn-glow"></div>
-      <div class="earn-ico">▶️</div>
-      <div class="earn-txt">
-        <b>Watch an ad, earn 50 coins</b>
-        <span>100% optional — every category stays free either way</span>
-      </div>
-      <div class="earn-arrow">+50</div>
     </div>
 
     <div class="spacer"></div>
@@ -367,7 +267,7 @@
     </div>
 
     <div class="footnote">
-      High score: <b id="home-highscore">0</b> · Ads are always optional — you can play every category for free.
+      High score: <b id="home-highscore">0</b> · Ads are always optional — every category, the vault, the wheel, and the shop all work without watching one.
       <br><button onclick="openModal('info')">About &amp; ad settings</button>
     </div>
   </section>
@@ -387,7 +287,7 @@
         <div class="meta-row">
           <span id="quiz-qnum">Q1 / 10</span>
           <span id="quiz-score">Score: 0</span>
-          <span class="lives" id="quiz-lives"></span>
+          <span class="keys" id="quiz-keys"></span>
         </div>
       </div>
     </div>
@@ -397,10 +297,7 @@
 
     <div class="options" id="quiz-options"></div>
 
-    <div class="hint-row">
-      <button class="hint-btn" id="hint-coin-btn" onclick="useHint('coins')">🎯 50/50 <span class="cost">30🪙</span></button>
-      <button class="hint-btn ad" id="hint-ad-btn" onclick="useHint('ad')">▶️ Watch ad for 50/50 (free)</button>
-    </div>
+    <div class="hint-row" id="hint-row"></div>
     <div class="footnote">Streak x<span id="quiz-multiplier">1</span> multiplier active</div>
   </section>
 
@@ -409,7 +306,7 @@
     <div class="result-hero">
       <span class="big-emoji" id="result-emoji">🏆</span>
       <h2 id="result-title">Round complete!</h2>
-      <p id="result-sub">Nice work — here's how you did.</p>
+      <p>Nice work — here's how you did.</p>
     </div>
 
     <div class="stat-grid">
@@ -420,9 +317,9 @@
     </div>
 
     <div class="ad-offer" id="double-coins-offer">
-      <div class="ico">🪙</div>
-      <div class="txt"><b>Double your coins</b><span>Watch a short rewarded ad — completely optional</span></div>
-      <button class="btn gold small" style="width:auto;" onclick="watchAdDoubleCoins()">Watch</button>
+      <div class="ico">🎁</div>
+      <div class="txt"><b>Open the Bonus Chest</b><span>Watch a short ad to double your coins — completely optional</span></div>
+      <button class="btn gold small" style="width:auto;" onclick="watchAdDoubleCoins()">Open</button>
     </div>
 
     <div class="btn-row" style="margin-bottom:10px;">
@@ -435,20 +332,45 @@
   <section class="screen" id="screen-gameover">
     <div class="spacer"></div>
     <div class="result-hero">
-      <span class="big-emoji">💔</span>
-      <h2>Out of lives</h2>
-      <p>You answered <b id="go-correct">0</b> questions correctly this round.</p>
+      <span class="big-emoji">🔒</span>
+      <h2>Locked out</h2>
+      <p>You cracked <b id="go-correct">0</b> questions before running out of keys.</p>
     </div>
 
     <div class="ad-offer">
-      <div class="ico">❤️</div>
-      <div class="txt"><b>Refill your lives</b><span>Watch a rewarded ad to keep this round going — totally optional</span></div>
-      <button class="btn gold small" style="width:auto;" onclick="watchAdRefillLives()">Watch</button>
+      <div class="ico">🔑</div>
+      <div class="txt"><b>Unlock more keys</b><span>Watch an ad to refill your keys and keep this round going — totally optional</span></div>
+      <button class="btn gold small" style="width:auto;" onclick="watchAdRefillLives()">Unlock</button>
     </div>
 
     <div class="btn-row">
       <button class="btn ghost" onclick="goHome()">Return home for free</button>
     </div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- ============ LUCKY SPIN SCREEN ============ -->
+  <section class="screen" id="screen-wheel">
+    <div class="subheader"><button class="icon-btn" onclick="goHome()">←</button><h3>Lucky Spin</h3><span style="width:36px"></span></div>
+
+    <div class="wheel-wrap">
+      <div class="wheel-pointer">▼</div>
+      <div class="wheel-disc" id="wheel-disc"></div>
+      <div class="wheel-hub">🪙</div>
+    </div>
+
+    <div class="spin-actions">
+      <button class="btn primary" id="spin-free-btn" onclick="spinFree()">Spin — Free</button>
+      <button class="btn ghost" id="spin-ad-btn" onclick="spinWithAd()">▶️ Bonus spin via ad</button>
+    </div>
+    <div class="footnote">One free spin daily · up to 3 bonus ad spins per day · never required to play</div>
+  </section>
+
+  <!-- ============ REWARDS SHOP SCREEN ============ -->
+  <section class="screen" id="screen-shop">
+    <div class="subheader"><button class="icon-btn" onclick="goHome()">←</button><h3>Rewards Shop</h3><span style="width:36px"></span></div>
+    <div class="footnote" style="margin:0 0 14px;">Spend coins earned from quizzes, the daily vault, and the spin wheel.</div>
+    <div class="shop-grid" id="shop-grid"></div>
     <div class="spacer"></div>
   </section>
 
@@ -466,23 +388,21 @@
 
 <script>
 /* ============================================================
-   NEON TRIVIA — Telegram Mini App
+   TRIVIA VAULT — Telegram Mini App
    Single-file build: HTML + CSS + JS
    Ad network: Adsgram (https://adsgram.ai)
    ============================================================ */
 
 /* ---------------------------------------------------------------
    ADSGRAM CONFIG
-   Block type: Interstitial (full-screen). One block powers every
-   optional ad moment in the app (hints, bonus coins, life refills).
-   Docs: https://docs.adsgram.ai/publisher/get-block-id
+   Block type: Reward (Video). This is a NEW app, so it needs its
+   own Reward block ID from your Adsgram publisher dashboard — the
+   ID from the old quiz app will not work here.
+   Get one at: https://docs.adsgram.ai/publisher/get-block-id
 --------------------------------------------------------------- */
-const ADSGRAM_BLOCK_ID_REWARDED = "int-46940";
+const ADSGRAM_BLOCK_ID_REWARD = "REPLACE_WITH_YOUR_REWARD_BLOCK_ID";
 
-// Debug mode shows Adsgram's test creative instead of a real ad and logs
-// verbose output to the console. Turned OFF now that a real block ID is
-// wired in — flip back to true only if you need to debug locally again.
-const ADSGRAM_DEBUG = false;
+const ADSGRAM_DEBUG = false; // flip to true only for local testing
 
 let rewardedController = null;
 
@@ -490,17 +410,17 @@ function initAdsgram(){
   if (!window.Adsgram) { console.warn("Adsgram SDK not loaded (offline / blocked script)."); return; }
   try {
     rewardedController = window.Adsgram.init({
-      blockId: ADSGRAM_BLOCK_ID_REWARDED,
+      blockId: ADSGRAM_BLOCK_ID_REWARD,
       debug: ADSGRAM_DEBUG,
-      debugBannerType: "FullscreenMedia"
+      debugBannerType: "RewardedVideo"
     });
-  } catch(e){ console.warn("Adsgram interstitial init failed", e); }
+  } catch(e){ console.warn("Adsgram reward init failed", e); }
 }
 
 /**
  * Shows a rewarded ad. onReward fires ONLY if the user watches to completion.
- * onSkip/onError fire otherwise — in every case the app must keep working,
- * per Adsgram's moderation rule that core features never require ads.
+ * onSkip/onError fire otherwise — every optional reward in this app must
+ * keep working even if ads are unavailable or skipped.
  */
 function showRewardedAd(onReward, onSkipOrError){
   if (!rewardedController){
@@ -526,13 +446,11 @@ function initTelegram(){
   tg.ready();
   tg.expand();
   try { tg.disableVerticalSwipes(); } catch(e){}
-  try { tg.setHeaderColor("#0a0b16"); } catch(e){}
-  try { tg.setBackgroundColor("#0a0b16"); } catch(e){}
+  try { tg.setHeaderColor("#0b0e16"); } catch(e){}
+  try { tg.setBackgroundColor("#0b0e16"); } catch(e){}
   try { tg.enableClosingConfirmation(); } catch(e){}
   tg.BackButton.onClick(() => {
-    if (currentScreen === "quiz" || currentScreen === "results" || currentScreen === "gameover"){
-      goHome();
-    }
+    if (currentScreen !== "home") goHome();
   });
 }
 
@@ -679,33 +597,68 @@ const QUESTIONS = {
 /* ---------------------------------------------------------------
    STATE
 --------------------------------------------------------------- */
-const STORAGE_KEY = "neon_trivia_state_v1";
+const STORAGE_KEY = "trivia_vault_state_v1";
 
+function defaultState(){
+  return {
+    coins:150, highScore:0, streakDays:1, lastPlayedISO:null, roundsCompleted:0,
+    lastClaimISO:null,
+    equippedSkin:"gold", ownedSkins:["gold"],
+    inventory:{ spareKeys:0, streakShields:0, freeHints:0 },
+    spin:{ lastFreeSpinISO:null, adSpinsDate:null, adSpinsUsed:0 },
+  };
+}
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw){
+      const parsed = JSON.parse(raw);
+      return Object.assign(defaultState(), parsed, {
+        inventory: Object.assign({spareKeys:0,streakShields:0,freeHints:0}, parsed.inventory||{}),
+        spin: Object.assign({lastFreeSpinISO:null,adSpinsDate:null,adSpinsUsed:0}, parsed.spin||{}),
+      });
+    }
   } catch(e){}
-  return { coins:150, highScore:0, streakDays:1, lastPlayedISO:null, roundsCompleted:0 };
+  return defaultState();
 }
 function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
 
+function todayStr(){ return new Date().toDateString(); }
+function yesterdayStr(){ return new Date(Date.now() - 86400000).toDateString(); }
+
 let state = loadState();
-applyDailyStreak();
+let pendingShieldToast = false;
 
 function applyDailyStreak(){
-  const today = new Date().toDateString();
-  if (state.lastPlayedISO !== today){
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    state.streakDays = (state.lastPlayedISO === yesterday) ? (state.streakDays||0) + 1 : 1;
-    state.lastPlayedISO = today;
-    saveState();
+  const today = todayStr();
+  if (state.lastPlayedISO === today) return;
+  if (state.lastPlayedISO){
+    if (state.lastPlayedISO === yesterdayStr()){
+      state.streakDays = (state.streakDays||0) + 1;
+    } else if (state.inventory.streakShields > 0){
+      state.inventory.streakShields -= 1;
+      pendingShieldToast = true;
+    } else {
+      state.streakDays = 1;
+    }
+  } else {
+    state.streakDays = 1;
   }
+  state.lastPlayedISO = today;
+  saveState();
 }
+applyDailyStreak();
+
+function applyTheme(){
+  document.body.classList.remove("skin-gold","skin-emerald","skin-sapphire","skin-violet");
+  document.body.classList.add("skin-" + state.equippedSkin);
+}
+applyTheme();
 
 let currentScreen = "home";
-let selectedCategory = null; // null = mixed
-let round = null; // { questions:[], index, score, lives, correctCount, bestStreak, currentStreak, timer }
+let selectedCategory = null;
+let wasMixedTapped = false;
+let round = null;
 
 /* ---------------------------------------------------------------
    NAVIGATION
@@ -716,7 +669,6 @@ function showScreen(id){
   currentScreen = id;
   updateBackButton();
 }
-
 function goHome(){
   clearInterval(questionTimerHandle);
   renderHome();
@@ -728,8 +680,14 @@ function goHome(){
 --------------------------------------------------------------- */
 function renderHome(){
   document.getElementById("home-coins").textContent = state.coins;
+  document.getElementById("hero-coins").textContent = state.coins;
   document.getElementById("home-streak").textContent = state.streakDays;
   document.getElementById("home-highscore").textContent = state.highScore;
+
+  renderVaultStrip();
+
+  document.getElementById("spin-status-home").textContent =
+    canFreeSpin() ? "1 free spin ready" : "Come back tomorrow";
 
   const hive = document.getElementById("category-hive");
   hive.innerHTML = "";
@@ -739,6 +697,7 @@ function renderHome(){
     el.innerHTML = `<span class="emoji">${cat.emoji}</span><span class="name">${cat.name}</span>`;
     el.onclick = () => {
       selectedCategory = (selectedCategory === cat.id) ? null : cat.id;
+      wasMixedTapped = false;
       haptic("light");
       renderHome();
     };
@@ -747,9 +706,6 @@ function renderHome(){
 
   const startBtn = document.getElementById("btn-start-home");
   const label = document.getElementById("start-cat-label");
-  const mixedRow = document.getElementById("mixed-mode");
-  mixedRow.style.boxShadow = selectedCategory === null && wasMixedTapped ? "0 0 0 2px var(--primary)" : "none";
-
   if (selectedCategory){
     const cat = CATEGORIES.find(c => c.id === selectedCategory);
     label.textContent = "· " + cat.name;
@@ -760,22 +716,13 @@ function renderHome(){
   } else {
     startBtn.style.display = "none";
   }
+
+  if (pendingShieldToast){
+    toast("🛡️ Streak Shield used — your streak is safe!");
+    pendingShieldToast = false;
+  }
 }
 
-/**
- * Home screen "Watch an ad, earn 50 coins" — fully optional, always
- * available regardless of category chosen, never gates any content.
- */
-function watchAdEarnCoins(){
-  showRewardedAd(() => {
-    state.coins += 50;
-    saveState();
-    renderHome();
-    toast("+50 coins added! 🪙");
-  }, () => { toast("Ad skipped — no coins added."); });
-}
-
-let wasMixedTapped = false;
 document.getElementById("mixed-mode").onclick = () => {
   selectedCategory = null;
   wasMixedTapped = true;
@@ -784,17 +731,57 @@ document.getElementById("mixed-mode").onclick = () => {
 };
 
 /* ---------------------------------------------------------------
+   DAILY VAULT (7-day claim ladder)
+--------------------------------------------------------------- */
+const VAULT_REWARDS = [20,25,30,40,50,70,120];
+
+function vaultDayIndex(){ return ((state.streakDays - 1) % 7 + 7) % 7; }
+function canClaimVault(){ return state.lastClaimISO !== todayStr(); }
+
+function renderVaultStrip(){
+  const idx = vaultDayIndex();
+  document.getElementById("vault-day-label").textContent = `Day ${idx+1} of 7`;
+  const strip = document.getElementById("vault-strip");
+  strip.innerHTML = "";
+  for (let i=0;i<7;i++){
+    const status = i < idx ? "past" : (i === idx ? "current" : "future");
+    const icon = i < idx ? "✅" : (i === idx ? "🎁" : "🔒");
+    const el = document.createElement("div");
+    el.className = "vault-pip " + status;
+    el.innerHTML = `<span class="ico">${icon}</span><span class="amt">${VAULT_REWARDS[i]}</span>`;
+    strip.appendChild(el);
+  }
+  const btn = document.getElementById("vault-claim-btn");
+  if (canClaimVault()){
+    btn.disabled = false;
+    btn.textContent = `Claim +${VAULT_REWARDS[idx]} 🪙`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = "Claimed for today ✓";
+  }
+}
+
+function claimVault(){
+  if (!canClaimVault()) return;
+  const idx = vaultDayIndex();
+  const amt = VAULT_REWARDS[idx];
+  state.coins += amt;
+  state.lastClaimISO = todayStr();
+  saveState();
+  renderHome();
+  toast(`Day ${idx+1} vault claimed — +${amt} coins! 🪙`);
+  haptic("success");
+}
+
+/* ---------------------------------------------------------------
    ROUND LOGIC
 --------------------------------------------------------------- */
 function buildQuestionPool(catId){
   if (catId){
     return shuffle([...QUESTIONS[catId]]).slice(0, 10).map(q => ({...toQObj(q), category:catId}));
   }
-  // mixed: pull from all categories
   let pool = [];
-  CATEGORIES.forEach(c => {
-    QUESTIONS[c.id].forEach(q => pool.push({...toQObj(q), category:c.id}));
-  });
+  CATEGORIES.forEach(c => { QUESTIONS[c.id].forEach(q => pool.push({...toQObj(q), category:c.id})); });
   return shuffle(pool).slice(0, 10);
 }
 function toQObj(arr){ return { text:arr[0], options:[...arr[1]], correct:arr[2] }; }
@@ -802,20 +789,23 @@ function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.
 
 function startRound(){
   wasMixedTapped = wasMixedTapped && selectedCategory === null;
+  let startLives = 3;
+  let spareKeyUsed = false;
+  if (state.inventory.spareKeys > 0){
+    state.inventory.spareKeys -= 1;
+    startLives = 4;
+    spareKeyUsed = true;
+    saveState();
+  }
   round = {
     questions: buildQuestionPool(selectedCategory),
-    index: 0,
-    score: 0,
-    lives: 3,
-    correctCount: 0,
-    bestStreak: 0,
-    currentStreak: 0,
-    hintUsedThisQ: false,
+    index: 0, score: 0, lives: startLives, correctCount: 0,
+    bestStreak: 0, currentStreak: 0, hintUsedThisQ: false,
   };
   showScreen("quiz");
   renderQuestion();
+  if (spareKeyUsed) toast("🔑 Spare Key used — starting with 4 keys!");
 }
-
 function playAgainSameCategory(){ startRound(); }
 
 let questionTimerHandle = null;
@@ -835,14 +825,13 @@ function renderQuestion(){
   document.getElementById("quiz-score").textContent = `Score: ${round.score}`;
   document.getElementById("quiz-multiplier").textContent = Math.min(1 + Math.floor(round.currentStreak/3), 4);
   document.getElementById("quiz-progress").style.width = `${(round.index/round.questions.length)*100}%`;
-  document.getElementById("hint-coin-btn").disabled = false;
-  document.getElementById("hint-ad-btn").disabled = false;
 
-  renderLives();
+  renderKeys();
+  renderHintRow();
 
   const ring = document.getElementById("timer-ring");
   ring.style.strokeDasharray = RING_CIRC;
-  ring.style.stroke = "var(--primary)";
+  ring.style.stroke = "var(--accent)";
   const numEl = document.getElementById("timer-num");
 
   const optionsEl = document.getElementById("quiz-options");
@@ -851,7 +840,6 @@ function renderQuestion(){
   q.options.forEach((opt, i) => {
     const el = document.createElement("div");
     el.className = "opt";
-    el.dataset.index = i;
     el.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
     el.onclick = () => selectAnswer(i);
     optionsEl.appendChild(el);
@@ -862,21 +850,32 @@ function renderQuestion(){
     const pct = round.timeLeft / QUESTION_SECONDS;
     ring.style.strokeDashoffset = RING_CIRC * (1 - pct);
     numEl.textContent = round.timeLeft;
-    if (round.timeLeft <= 5) ring.style.stroke = "var(--danger)";
+    if (round.timeLeft <= 5) ring.style.stroke = "var(--ruby)";
     if (round.timeLeft <= 0){
       clearInterval(questionTimerHandle);
-      selectAnswer(-1); // timeout = wrong
+      selectAnswer(-1);
     }
   }, 1000);
-  // set initial dashoffset
   ring.style.strokeDashoffset = 0;
 }
 
-function renderLives(){
-  const el = document.getElementById("quiz-lives");
+function renderKeys(){
+  const el = document.getElementById("quiz-keys");
   let out = "";
-  for (let i=0;i<3;i++){ out += `<span class="${i < round.lives ? "" : "dead"}">❤️</span>`; }
+  const totalPips = Math.max(round.lives, 3);
+  for (let i=0;i<totalPips;i++){ out += `<span class="${i < round.lives ? "" : "dead"}">🔑</span>`; }
   el.innerHTML = out;
+}
+
+function renderHintRow(){
+  const row = document.getElementById("hint-row");
+  if (state.inventory.freeHints > 0){
+    row.innerHTML = `<button class="hint-btn free" onclick="useHint('free')">🎁 Free Hint <span class="cost">x${state.inventory.freeHints}</span></button>`;
+  } else {
+    row.innerHTML = `
+      <button class="hint-btn" onclick="useHint('coins')">🔑 50/50 <span class="cost">30🪙</span></button>
+      <button class="hint-btn ad" onclick="useHint('ad')">▶️ Free via ad</button>`;
+  }
 }
 
 function selectAnswer(i){
@@ -901,23 +900,18 @@ function selectAnswer(i){
     haptic("error");
     round.currentStreak = 0;
     round.lives -= 1;
-    renderLives();
+    renderKeys();
   }
 
   setTimeout(() => {
-    if (round.lives <= 0){
-      endRoundGameOver();
-    } else if (round.index + 1 >= round.questions.length){
-      endRoundSuccess();
-    } else {
-      round.index += 1;
-      renderQuestion();
-    }
+    if (round.lives <= 0) endRoundGameOver();
+    else if (round.index + 1 >= round.questions.length) endRoundSuccess();
+    else { round.index += 1; renderQuestion(); }
   }, 900);
 }
 
 /* ---------------------------------------------------------------
-   HINTS (optional — coins OR a rewarded ad; never required)
+   HINTS (optional — free stock, coins, or a rewarded ad)
 --------------------------------------------------------------- */
 function useHint(mode){
   if (round.hintUsedThisQ) return;
@@ -931,11 +925,15 @@ function useHint(mode){
       opts[i].classList.add("disabled-opt");
       opts[i].onclick = null;
     });
-    document.getElementById("hint-coin-btn").disabled = true;
-    document.getElementById("hint-ad-btn").disabled = true;
+    document.querySelectorAll(".hint-btn").forEach(b => b.disabled = true);
   };
 
-  if (mode === "coins"){
+  if (mode === "free"){
+    if (state.inventory.freeHints <= 0) return;
+    state.inventory.freeHints -= 1;
+    saveState();
+    apply();
+  } else if (mode === "coins"){
     if (state.coins < 30){ toast("Not enough coins — try the free ad option!"); return; }
     state.coins -= 30; saveState(); renderHome();
     apply();
@@ -975,7 +973,7 @@ function watchAdDoubleCoins(){
     saveState();
     document.getElementById("res-coins").textContent = "+" + (pendingCoinsAwarded*2);
     document.getElementById("double-coins-offer").style.display = "none";
-    toast("Coins doubled! 🪙");
+    toast("Chest opened — coins doubled! 🎁");
   }, () => { toast("Ad skipped — coins unchanged."); });
 }
 
@@ -987,10 +985,185 @@ function endRoundGameOver(){
 function watchAdRefillLives(){
   showRewardedAd(() => {
     round.lives = 3;
-    toast("Lives refilled — back in the game!");
+    toast("Keys unlocked — back in the game!");
     showScreen("quiz");
     renderQuestion();
-  }, () => { toast("Ad skipped — lives not refilled."); });
+  }, () => { toast("Ad skipped — keys not refilled."); });
+}
+
+/* ---------------------------------------------------------------
+   LUCKY SPIN WHEEL
+--------------------------------------------------------------- */
+const SPIN_SEGMENTS = [
+  {amt:10, w:22}, {amt:15, w:18}, {amt:20, w:15}, {amt:10, w:20},
+  {amt:25, w:12}, {amt:15, w:9}, {amt:50, w:3}, {amt:100, w:1},
+];
+let spinning = false;
+
+function canFreeSpin(){ return state.spin.lastFreeSpinISO !== todayStr(); }
+function adSpinsRemainingToday(){
+  if (state.spin.adSpinsDate !== todayStr()) return 3;
+  return Math.max(0, 3 - state.spin.adSpinsUsed);
+}
+function weightedPickIndex(segments){
+  const total = segments.reduce((s,x) => s+x.w, 0);
+  let r = Math.random() * total;
+  for (let i=0;i<segments.length;i++){
+    if (r < segments[i].w) return i;
+    r -= segments[i].w;
+  }
+  return segments.length - 1;
+}
+
+function buildWheelBackground(){
+  const stops = SPIN_SEGMENTS.map((seg,i) => {
+    const start = i*45, end = (i+1)*45;
+    const color = i===7 ? "var(--gold)" : (i%2===0 ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.03)");
+    return `${color} ${start}deg ${end}deg`;
+  });
+  return `conic-gradient(${stops.join(",")})`;
+}
+
+function renderWheelDisc(){
+  const disc = document.getElementById("wheel-disc");
+  disc.style.background = buildWheelBackground();
+  disc.innerHTML = "";
+  SPIN_SEGMENTS.forEach((seg,i) => {
+    const angle = i*45 + 22.5;
+    const el = document.createElement("div");
+    el.className = "wheel-seg" + (i===7 ? " jackpot" : "");
+    el.style.transform = `rotate(${angle}deg) translate(0, -84px)`;
+    el.innerHTML = `<span class="lbl" style="transform:translate(-50%,-50%) rotate(${-angle}deg)">${seg.amt}</span>`;
+    disc.appendChild(el);
+  });
+}
+
+function renderWheelActions(){
+  const freeBtn = document.getElementById("spin-free-btn");
+  freeBtn.disabled = !canFreeSpin();
+  freeBtn.textContent = canFreeSpin() ? "Spin — Free" : "Come back tomorrow";
+
+  const adBtn = document.getElementById("spin-ad-btn");
+  const left = adSpinsRemainingToday();
+  adBtn.disabled = left <= 0;
+  adBtn.textContent = left > 0 ? `▶️ Bonus spin via ad (${left} left)` : "▶️ No bonus spins left today";
+}
+
+function openWheel(){
+  const disc = document.getElementById("wheel-disc");
+  disc.style.transition = "none";
+  disc.style.transform = "rotate(0deg)";
+  renderWheelDisc();
+  renderWheelActions();
+  showScreen("wheel");
+}
+
+function doSpin(free){
+  if (spinning) return;
+  if (free && !canFreeSpin()) return;
+  spinning = true;
+  const idx = weightedPickIndex(SPIN_SEGMENTS);
+  const seg = SPIN_SEGMENTS[idx];
+  const target = 1800 - (idx*45 + 22.5);
+
+  const disc = document.getElementById("wheel-disc");
+  disc.style.transition = "none";
+  disc.style.transform = "rotate(0deg)";
+  void disc.offsetWidth;
+  disc.style.transition = "transform 4.2s cubic-bezier(.12,.67,.14,1)";
+  disc.style.transform = `rotate(${target}deg)`;
+  document.querySelectorAll(".spin-actions button").forEach(b => b.disabled = true);
+
+  setTimeout(() => {
+    state.coins += seg.amt;
+    if (free) state.spin.lastFreeSpinISO = todayStr();
+    saveState();
+    spinning = false;
+    renderWheelActions();
+    renderHome();
+    toast(`🎉 You won ${seg.amt} coins!`);
+    haptic("success");
+  }, 4300);
+}
+function spinFree(){ doSpin(true); }
+function spinWithAd(){
+  if (adSpinsRemainingToday() <= 0){ toast("No bonus spins left today — come back tomorrow!"); return; }
+  showRewardedAd(() => {
+    if (state.spin.adSpinsDate !== todayStr()){ state.spin.adSpinsDate = todayStr(); state.spin.adSpinsUsed = 0; }
+    state.spin.adSpinsUsed += 1;
+    saveState();
+    doSpin(false);
+  }, () => { toast("Ad skipped — no bonus spin."); });
+}
+
+/* ---------------------------------------------------------------
+   REWARDS SHOP
+--------------------------------------------------------------- */
+const SHOP_ITEMS = [
+  { id:"spareKey",     name:"Spare Key",       icon:"🔑", cost:80,  type:"consumable", desc:"Start your next round with one extra key." },
+  { id:"streakShield", name:"Streak Shield",   icon:"🛡️", cost:60,  type:"consumable", desc:"Auto-protects your streak if you miss a day." },
+  { id:"hintPack",     name:"Hint Pack ×3",    icon:"🎯", cost:50,  type:"consumable", desc:"3 free 50/50 hints — no coins or ads needed." },
+  { id:"skin-emerald", name:"Emerald Vault",   icon:"💚", cost:150, type:"skin", desc:"Recolor your vault in emerald green." },
+  { id:"skin-sapphire",name:"Sapphire Vault",  icon:"💙", cost:150, type:"skin", desc:"Recolor your vault in deep sapphire blue." },
+  { id:"skin-violet",  name:"Violet Vault",    icon:"💜", cost:150, type:"skin", desc:"Recolor your vault in royal violet." },
+];
+
+function ownedCountLabel(item){
+  if (item.id === "spareKey") return state.inventory.spareKeys > 0 ? ` (${state.inventory.spareKeys})` : "";
+  if (item.id === "streakShield") return state.inventory.streakShields > 0 ? ` (${state.inventory.streakShields})` : "";
+  if (item.id === "hintPack") return state.inventory.freeHints > 0 ? ` (${state.inventory.freeHints} hints)` : "";
+  return "";
+}
+
+function openShop(){ renderShop(); showScreen("shop"); }
+
+function renderShop(){
+  const grid = document.getElementById("shop-grid");
+  grid.innerHTML = "";
+  SHOP_ITEMS.forEach(item => {
+    let btnLabel, btnDisabled = false, btnClass = "btn gold small";
+    if (item.type === "skin"){
+      const key = item.id.replace("skin-","");
+      if (state.equippedSkin === key){ btnLabel = "Equipped"; btnDisabled = true; btnClass = "btn ghost small"; }
+      else if (state.ownedSkins.includes(key)){ btnLabel = "Equip"; btnClass = "btn ghost small"; }
+      else { btnLabel = `Unlock ${item.cost}🪙`; btnDisabled = state.coins < item.cost; }
+    } else {
+      btnLabel = `${item.cost}🪙`;
+      btnDisabled = state.coins < item.cost;
+    }
+    const el = document.createElement("div");
+    el.className = "shop-item";
+    el.innerHTML = `<span class="ico">${item.icon}</span><div class="s-txt"><b>${item.name}${ownedCountLabel(item)}</b><span>${item.desc}</span></div><button class="${btnClass}" style="width:auto;" ${btnDisabled ? "disabled" : ""} onclick="buyItem('${item.id}')">${btnLabel}</button>`;
+    grid.appendChild(el);
+  });
+}
+
+function buyItem(id){
+  const item = SHOP_ITEMS.find(x => x.id === id);
+  if (!item) return;
+
+  if (item.type === "skin"){
+    const key = item.id.replace("skin-","");
+    if (state.equippedSkin === key) return;
+    if (state.ownedSkins.includes(key)){
+      state.equippedSkin = key; applyTheme(); saveState(); renderShop();
+      toast(`${item.name} equipped!`); haptic("light");
+      return;
+    }
+    if (state.coins < item.cost){ toast("Not enough coins yet."); return; }
+    state.coins -= item.cost; state.ownedSkins.push(key); state.equippedSkin = key;
+    applyTheme(); saveState(); renderShop(); renderHome();
+    toast(`${item.name} unlocked & equipped! 🎉`); haptic("success");
+    return;
+  }
+
+  if (state.coins < item.cost){ toast("Not enough coins yet."); return; }
+  state.coins -= item.cost;
+  if (item.id === "spareKey") state.inventory.spareKeys += 1;
+  if (item.id === "streakShield") state.inventory.streakShields += 1;
+  if (item.id === "hintPack") state.inventory.freeHints += 3;
+  saveState(); renderShop(); renderHome();
+  toast(`${item.name} purchased!`); haptic("success");
 }
 
 /* ---------------------------------------------------------------
@@ -1000,10 +1173,10 @@ function openModal(kind){
   const body = document.getElementById("modal-body");
   if (kind === "info"){
     body.innerHTML = `
-      <h3>About Neon Trivia</h3>
-      <p>Every category, every round, and the full quiz experience are free to play — nothing is ever locked behind an ad.</p>
-      <p>Ads in this app are always optional and always your choice: watch one to earn free coins any time, unlock a 50/50 hint, double your round's coins, or refill your lives after a loss. Skipping an ad never blocks you from continuing — you can always return home or keep playing for free.</p>
-      <p>Ads only ever appear when you tap a "Watch ad" button yourself — never automatically, and never mid-question.</p>
+      <h3>About Trivia Vault</h3>
+      <p>Every category, the full quiz, the daily vault claim, one free spin a day, and the rewards shop are all free — nothing is ever locked behind an ad.</p>
+      <p>Ads in this app are always optional and always your choice: watch one to unlock a hint, open the bonus chest for double coins, refill your keys after a loss, or grab an extra spin. Skipping an ad never blocks you from continuing — you can always return home or keep playing for free.</p>
+      <p>Ads only ever appear when you tap a "watch ad" button yourself — never automatically, and never mid-question.</p>
     `;
   }
   document.getElementById("modal-overlay").classList.add("active");
@@ -1027,7 +1200,6 @@ function toast(msg){
 --------------------------------------------------------------- */
 initTelegram();
 initAdsgram();
-  
 renderHome();
 </script>
 </body>
