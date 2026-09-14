@@ -3,12 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Trivia Vault — Quiz & Rewards</title>
+<title>Sum Vault — Math & Rewards</title>
 
 <!-- Telegram Mini Apps SDK (required) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<!-- Adsgram SDK (required for ad monetization) -->
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<!-- RichAds SDK (required for ad monetization) -->
+<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+<script>
+  window.TelegramAdsController = new TelegramAdsController();
+  window.TelegramAdsController.initialize({
+    pubId: "1016263",
+    appId: "7965",
+  });
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,11 +27,11 @@
     --bg-2:#10131e;
     --panel:#161b29;
     --panel-2:#1e2438;
-    --border:rgba(242,184,75,.14);
+    --border:rgba(67,176,92,.16);
 
-    --accent:#f2b84b;
-    --accent-deep:#c98a1f;
-    --accent-glow:rgba(242,184,75,.45);
+    --accent:#43b05c;
+    --accent-deep:#2c7a3f;
+    --accent-glow:rgba(67,176,92,.45);
 
     --gold:#f2b84b;
     --gold-glow:rgba(242,184,75,.5);
@@ -112,16 +119,10 @@
   .action-card .a-txt span{ font-size:10px; color:var(--text-dim); }
 
   /* ---------- Category hive ---------- */
-  .hive{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px 10px; margin-bottom:8px; }
-  .hex{ position:relative; aspect-ratio:.92; clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background:var(--panel-2); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; transition:transform .15s ease, box-shadow .2s ease; padding:8px; }
-  .hex:active{ transform:scale(.94); }
-  .hex.selected{ box-shadow:0 0 0 2px var(--accent), 0 0 22px var(--accent-glow); background:color-mix(in srgb, var(--accent) 18%, var(--panel-2)); }
-  .hex .emoji{ font-size:26px; }
-  .hex .name{ font-size:11px; font-weight:700; text-align:center; line-height:1.15; }
-
-  .mixed-row{ display:flex; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:15px 17px; margin:14px 0 16px; cursor:pointer; }
-  .mixed-row .l{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:14px; }
-  .mixed-row .r{ color:var(--text-dim); font-size:18px; }
+  .quiz-intro{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:16px; }
+  .quiz-intro .qi-ico{ font-size:30px; }
+  .quiz-intro .qi-txt b{ display:block; font-size:14px; }
+  .quiz-intro .qi-txt span{ font-size:11px; color:var(--text-dim); }
 
   .spacer{ flex:1; }
   .footnote{ text-align:center; color:var(--text-faint); font-size:11px; margin-top:14px; line-height:1.5; }
@@ -151,7 +152,7 @@
   .cat-tag{ font-size:11px; font-weight:700; color:var(--accent); margin-bottom:-58px; }
 
   .options{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
-  .opt{ background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px 17px; font-size:14px; font-weight:600; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; transition:background .15s ease, border-color .15s ease, transform .1s ease; }
+  .opt{ background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px 17px; font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; transition:background .15s ease, border-color .15s ease, transform .1s ease; }
   .opt:active{ transform:scale(.98); }
   .opt .letter{ width:28px; height:28px; border-radius:10px; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--text-dim); flex-shrink:0; }
   .opt.correct{ border-color:var(--emerald); background:rgba(52,211,153,.14); }
@@ -229,7 +230,7 @@
       <div class="vault-ring"><span class="vault-coin">🪙</span></div>
       <div class="vault-balance" id="hero-coins">0</div>
       <div class="vault-label">VAULT BALANCE</div>
-      <div class="vault-tagline">Answer questions, spin the wheel, and stock your vault.</div>
+      <div class="vault-tagline">Solve two-digit sums, spin the wheel, and stock your vault.</div>
     </div>
 
     <div class="vault-strip-wrap">
@@ -252,22 +253,17 @@
       </div>
     </div>
 
-    <div class="section-label">Choose a category</div>
-    <div class="hive" id="category-hive"></div>
-
-    <div class="mixed-row" id="mixed-mode">
-      <div class="l">🎲 Mixed Rounds — a bit of everything</div>
-      <div class="r">›</div>
+    <div class="quiz-intro">
+      <div class="qi-ico">➕</div>
+      <div class="qi-txt"><b>Two-Digit Addition</b><span>10 sums per round · 15 seconds each · 3 keys</span></div>
     </div>
 
     <div class="spacer"></div>
 
-    <div class="btn primary" id="btn-start-home" style="display:none;" onclick="startRound()">
-      Play <span id="start-cat-label"></span>
-    </div>
+    <div class="btn primary" id="btn-start-home" onclick="startRound()">Start Quiz</div>
 
     <div class="footnote">
-      High score: <b id="home-highscore">0</b> · Ads are always optional — every category, the vault, the wheel, and the shop all work without watching one.
+      High score: <b id="home-highscore">0</b> · Ads are always optional — the quiz, the vault, the wheel, and the shop all work without watching one.
       <br><button onclick="openModal('info')">About &amp; ad settings</button>
     </div>
   </section>
@@ -292,8 +288,8 @@
       </div>
     </div>
 
-    <div class="cat-tag" id="quiz-cat-tag">SCIENCE</div>
-    <div class="qcard"><h2 id="quiz-question">Loading question…</h2></div>
+    <div class="cat-tag">ADDITION</div>
+    <div class="qcard"><h2 id="quiz-question" style="font-variant-numeric:tabular-nums; font-size:26px;">Loading question…</h2></div>
 
     <div class="options" id="quiz-options"></div>
 
@@ -388,52 +384,45 @@
 
 <script>
 /* ============================================================
-   TRIVIA VAULT — Telegram Mini App
+   SUM VAULT — Telegram Mini App (V2)
    Single-file build: HTML + CSS + JS
-   Ad network: Adsgram (https://adsgram.ai)
+   Ad network: RichAds (https://richads.com)
    ============================================================ */
 
 /* ---------------------------------------------------------------
-   ADSGRAM CONFIG
-   Block type: Reward (Video). This is a NEW app, so it needs its
-   own Reward block ID from your Adsgram publisher dashboard — the
-   ID from the old quiz app will not work here.
-   Get one at: https://docs.adsgram.ai/publisher/get-block-id
+   RICHADS CONFIG
+   The RichAds TelegramAdsController is already created and
+   initialized in the <head> (pubId 1016263 / appId 7965). Per
+   RichAds' publisher docs, that single tag is enough to serve the
+   passive formats automatically and on its own schedule: push-style,
+   interstitial banner, interstitial video, and embedded banner —
+   there is no separate JS call needed here for those, and no public,
+   documented on-demand "show this ad, tell me when it's done" method
+   for them.
+
+   "Rewarded Ads" — ads tied to a specific action, like the
+   watch-ad-to-earn-coins buttons below — are explicitly called out
+   by RichAds as needing to be configured with your account manager
+   first ("connect your manager or reach out to us"). Until you have
+   that event-related callback from RichAds, showRewardedAd() below
+   safely falls back to "ads unavailable," exactly like it did with
+   the old network, so nothing in the app is ever blocked.
+
+   Once your manager gives you the rewarded method/callback for this
+   pubId/appId, drop it into the marked spot below.
 --------------------------------------------------------------- */
-const ADSGRAM_BLOCK_ID_REWARD = "int-47258";
-
-const ADSGRAM_DEBUG = false; // flip to true only for local testing
-
-let rewardedController = null;
-
-function initAdsgram(){
-  if (!window.Adsgram) { console.warn("Adsgram SDK not loaded (offline / blocked script)."); return; }
-  try {
-    rewardedController = window.Adsgram.init({
-      blockId: ADSGRAM_BLOCK_ID_REWARD,
-      debug: ADSGRAM_DEBUG,
-      debugBannerType: "RewardedVideo"
-    });
-  } catch(e){ console.warn("Adsgram reward init failed", e); }
-}
-
-/**
- * Shows a rewarded ad. onReward fires ONLY if the user watches to completion.
- * onSkip/onError fire otherwise — every optional reward in this app must
- * keep working even if ads are unavailable or skipped.
- */
 function showRewardedAd(onReward, onSkipOrError){
-  if (!rewardedController){
-    toast("Ads unavailable right now — try again later.");
-    onSkipOrError && onSkipOrError();
+  const controller = window.TelegramAdsController;
+  // TODO: replace this feature-detect with the real method name RichAds
+  // gives you for event-related Rewarded Ads once it's configured.
+  if (controller && typeof controller.showRewarded === "function"){
+    controller.showRewarded()
+      .then(() => { onReward && onReward(); })
+      .catch(() => { onSkipOrError && onSkipOrError(); });
     return;
   }
-  rewardedController.show()
-    .then(() => { onReward && onReward(); })
-    .catch((result) => {
-      console.log("Rewarded ad not completed:", result);
-      onSkipOrError && onSkipOrError();
-    });
+  toast("Rewarded ads aren't set up yet — ask your RichAds manager to enable event-related ads.");
+  onSkipOrError && onSkipOrError();
 }
 
 /* ---------------------------------------------------------------
@@ -472,132 +461,41 @@ function updateBackButton(){
 }
 
 /* ---------------------------------------------------------------
-   QUESTION BANK
+   MATH QUESTION GENERATOR — two-digit + two-digit addition
 --------------------------------------------------------------- */
-const CATEGORIES = [
-  { id:"science",  name:"Science",     emoji:"🧬" },
-  { id:"history",  name:"History",     emoji:"🏛️" },
-  { id:"pop",      name:"Pop Culture", emoji:"🎬" },
-  { id:"geo",      name:"Geography",   emoji:"🌍" },
-  { id:"crypto",   name:"Crypto/Tech", emoji:"🪙" },
-  { id:"sports",   name:"Sports",      emoji:"⚽" },
-];
+function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-const QUESTIONS = {
-  science:[
-    ["What is the powerhouse of the cell?",["Nucleus","Mitochondria","Ribosome","Golgi apparatus"],1],
-    ["What is the chemical symbol for gold?",["Ag","Au","Gd","Go"],1],
-    ["Which planet is closest to the Sun?",["Venus","Mercury","Earth","Mars"],1],
-    ["Which gas do plants absorb for photosynthesis?",["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],2],
-    ["How many bones does an adult human body have?",["186","206","226","246"],1],
-    ["Roughly how fast does light travel?",["150,000 km/s","300,000 km/s","450,000 km/s","600,000 km/s"],1],
-    ["What is the largest organ of the human body?",["Liver","Heart","Skin","Lungs"],2],
-    ["What is the chemical formula for water?",["CO2","H2O","O2","NaCl"],1],
-    ["What is the hardest naturally occurring substance?",["Quartz","Diamond","Iron","Granite"],1],
-    ["How many chambers does the human heart have?",["2","3","4","5"],2],
-    ["What process do plants use to make food from sunlight?",["Respiration","Photosynthesis","Fermentation","Digestion"],1],
-    ["Which gas makes up most of Earth's atmosphere?",["Oxygen","Nitrogen","Carbon dioxide","Argon"],1],
-    ["What is the scientific study of living organisms called?",["Geology","Biology","Astronomy","Chemistry"],1],
-    ["What is the freezing point of water in Celsius?",["-10°C","0°C","10°C","32°C"],1],
-    ["Which force pulls objects toward the Earth?",["Magnetism","Friction","Gravity","Inertia"],2],
-    ["What is considered the basic unit of life?",["Atom","Molecule","Cell","Tissue"],2],
-  ],
-  history:[
-    ["In what year did World War II end?",["1943","1944","1945","1946"],2],
-    ["Who was the first President of the United States?",["Thomas Jefferson","John Adams","George Washington","Abraham Lincoln"],2],
-    ["The Great Wall was built primarily in which country?",["Japan","China","Mongolia","Korea"],1],
-    ["What writing system did ancient Egyptians use?",["Cuneiform","Hieroglyphics","Sanskrit","Runes"],1],
-    ["In what year did the Titanic sink?",["1905","1912","1918","1923"],1],
-    ["In which country did the Renaissance begin?",["France","Italy","Spain","Germany"],1],
-    ["Who painted the Mona Lisa?",["Michelangelo","Raphael","Leonardo da Vinci","Donatello"],2],
-    ["In what year did the Berlin Wall fall?",["1985","1987","1989","1991"],2],
-    ["Which ancient wonder is located in Giza?",["Colossus of Rhodes","The Great Pyramid","Hanging Gardens","Lighthouse of Alexandria"],1],
-    ["Who was known as the 'Maid of Orleans'?",["Marie Antoinette","Joan of Arc","Catherine the Great","Eleanor of Aquitaine"],1],
-    ["Who was the first man to walk on the Moon?",["Buzz Aldrin","Yuri Gagarin","Neil Armstrong","John Glenn"],2],
-    ["What was the capital of the Roman Empire?",["Athens","Rome","Constantinople","Carthage"],1],
-    ["The Cold War was primarily between the USA and which nation?",["China","Soviet Union","Germany","Japan"],1],
-    ["In what year did the French Revolution begin?",["1776","1789","1799","1804"],1],
-    ["Which ancient civilization built the Colosseum?",["Greek","Egyptian","Roman","Persian"],2],
-    ["In what year was the US Declaration of Independence signed?",["1770","1776","1783","1789"],1],
-  ],
-  pop:[
-    ["Which streaming platform released 'Stranger Things'?",["Hulu","Netflix","Disney+","Amazon Prime"],1],
-    ["Which superhero is known as the 'Man of Steel'?",["Batman","Superman","Iron Man","Thor"],1],
-    ["Which band released the album 'Abbey Road'?",["The Rolling Stones","The Beatles","Queen","Led Zeppelin"],1],
-    ["What is the name of the wizarding school in Harry Potter?",["Hogwarts","Narnia Academy","Xavier's School","Brakebills"],0],
-    ["What is the name of the Simpsons' fictional hometown?",["Shelbyville","Springfield","Ogdenville","Capital City"],1],
-    ["Which Pixar film explores emotions inside a girl's mind?",["Soul","Inside Out","Coco","Up"],1],
-    ["Which actor plays Iron Man in the Marvel films?",["Chris Evans","Chris Hemsworth","Robert Downey Jr.","Mark Ruffalo"],2],
-    ["Which artist released the album 'Thriller'?",["Prince","Michael Jackson","Stevie Wonder","Lionel Richie"],1],
-    ["Which show is set in the fictional land of Westeros?",["Vikings","Game of Thrones","The Witcher","House of the Dragon"],1],
-    ["Which game franchise features a character named Mario?",["Sonic","Super Mario","Zelda","Kirby"],1],
-    ["Which singer is known as the 'Queen of Pop'?",["Beyoncé","Madonna","Rihanna","Lady Gaga"],1],
-    ["Which film features the line 'May the Force be with you'?",["Star Trek","Star Wars","Guardians of the Galaxy","Dune"],1],
-    ["Which K-pop group released the hit song 'Dynamite'?",["BLACKPINK","BTS","EXO","Twice"],1],
-    ["Which app popularized short looping videos and dance trends?",["Instagram","TikTok","Snapchat","YouTube"],1],
-    ["Who plays Hermione Granger in the Harry Potter films?",["Emma Stone","Emma Watson","Emma Roberts","Emily Blunt"],1],
-    ["Which streaming service produced 'The Crown'?",["HBO","Netflix","Apple TV+","Hulu"],1],
-  ],
-  geo:[
-    ["Which is the largest country in the world by area?",["Canada","China","USA","Russia"],3],
-    ["Which river is traditionally cited as the world's longest?",["Amazon","Nile","Yangtze","Mississippi"],1],
-    ["What is the smallest country in the world?",["Monaco","San Marino","Vatican City","Liechtenstein"],2],
-    ["What is the capital of Japan?",["Osaka","Kyoto","Tokyo","Nagoya"],2],
-    ["Which continent was historically nicknamed the 'Dark Continent'?",["Asia","Africa","South America","Australia"],1],
-    ["The Sahara Desert is located mainly on which continent?",["Asia","Africa","Australia","South America"],1],
-    ["Mount Everest is located in which country?",["India","Nepal","China","Bhutan"],1],
-    ["Which country is famously shaped like a boot?",["Spain","Italy","Greece","Portugal"],1],
-    ["The Great Barrier Reef is located near which country?",["Philippines","Australia","Indonesia","Fiji"],1],
-    ["What is the capital city of Canada?",["Toronto","Vancouver","Ottawa","Montreal"],2],
-    ["Which is the largest ocean on Earth?",["Atlantic","Indian","Pacific","Arctic"],2],
-    ["Which country is home to the Eiffel Tower?",["Italy","France","Spain","Belgium"],1],
-    ["The Amazon Rainforest is primarily located in which country?",["Peru","Colombia","Brazil","Venezuela"],2],
-    ["How many continents are there on Earth?",["5","6","7","8"],2],
-    ["Which country is known as the 'Land of the Rising Sun'?",["China","Japan","South Korea","Thailand"],1],
-    ["Which is the largest hot desert in the world?",["Gobi","Kalahari","Sahara","Arabian"],2],
-  ],
-  crypto:[
-    ["Who is credited as Bitcoin's pseudonymous creator?",["Vitalik Buterin","Satoshi Nakamoto","Elon Musk","Charlie Lee"],1],
-    ["What is Bitcoin's maximum supply cap?",["18 million","21 million","100 million","Unlimited"],1],
-    ["Which blockchain platform is known for smart contracts?",["Bitcoin","Ethereum","Litecoin","Cardano"],1],
-    ["What term describes a unique digital collectible token?",["DEX","NFT","DAO","ICO"],1],
-    ["What is the name of Telegram's own blockchain token?",["TRON","TON","XRP","ADA"],1],
-    ["In crypto slang, 'HODL' originated from a misspelling of which word?",["Hold","Sell","Trade","Mine"],0],
-    ["What does 'CPU' stand for?",["Computer Personal Unit","Central Processing Unit","Central Program Utility","Core Processing Unit"],1],
-    ["What does 'www' stand for?",["World Wide Web","Wide World Web","World Web Wide","Web World Wide"],0],
-    ["Which company created the iPhone?",["Samsung","Google","Apple","Microsoft"],2],
-    ["What does 'AI' commonly stand for?",["Automated Interface","Artificial Intelligence","Applied Informatics","Automatic Input"],1],
-    ["What is a decentralized application commonly called?",["bApp","dApp","xApp","cApp"],1],
-    ["What core technology underlies most cryptocurrencies?",["Cloud computing","Blockchain","Quantum computing","Neural networks"],1],
-    ["Google was co-founded by Larry Page and which other person?",["Elon Musk","Sergey Brin","Steve Jobs","Bill Gates"],1],
-    ["What does 'URL' stand for?",["Universal Reference Link","Uniform Resource Locator","United Resource Locator","Unified Retrieval Link"],1],
-    ["What is the term for actively buying and selling crypto assets?",["Mining","Staking","Trading","Farming"],2],
-    ["Which messaging app has its own integrated crypto wallet ecosystem?",["WhatsApp","Telegram","Signal","Discord"],1],
-  ],
-  sports:[
-    ["Which sport is nicknamed 'the beautiful game'?",["Basketball","Football/Soccer","Tennis","Cricket"],1],
-    ["How many players are on a standard soccer team on the field?",["9","10","11","12"],2],
-    ["Which country has won the most FIFA World Cups?",["Germany","Argentina","Brazil","Italy"],2],
-    ["Which sport is Wimbledon associated with?",["Golf","Tennis","Cricket","Rugby"],1],
-    ["The Olympic Games are held every how many years?",["2","3","4","5"],2],
-    ["Which sport uses a 'birdie' and a racket?",["Squash","Badminton","Tennis","Table Tennis"],1],
-    ["What is the standard height of a basketball hoop, in feet?",["8","9","10","12"],2],
-    ["Which sport is known as 'America's pastime'?",["Basketball","Baseball","Football","Hockey"],1],
-    ["How many players are on a basketball team on the court?",["4","5","6","7"],1],
-    ["Which Grand Slam tennis tournament is played on clay courts?",["Wimbledon","US Open","French Open","Australian Open"],2],
-    ["Which sport uses a shuttlecock?",["Tennis","Badminton","Squash","Volleyball"],1],
-    ["Which country is credited with inventing cricket?",["Australia","India","England","South Africa"],2],
-    ["In golf, one stroke under par on a hole is called a:",["Eagle","Bogey","Birdie","Par"],2],
-    ["Which of these is NOT a Summer Olympics event?",["Swimming","Athletics","Skiing","Gymnastics"],2],
-    ["How many rings appear on the Olympic flag?",["4","5","6","7"],1],
-    ["Cycling is the core sport of which famous multi-stage race?",["Tour de France","Iron Man","Grand Prix","Ashes Series"],0],
-  ],
-};
+function generateQuestion(){
+  const a = randInt(10, 99);
+  const b = randInt(10, 99);
+  const correctVal = a + b;
+  const offsets = [1,-1,2,-2,9,-9,10,-10,11,-11,20,-20];
+  const distractors = new Set();
+  let guard = 0;
+  while (distractors.size < 3 && guard < 50){
+    guard++;
+    const off = offsets[randInt(0, offsets.length - 1)];
+    const val = correctVal + off;
+    if (val > 0 && val !== correctVal && !distractors.has(val)) distractors.add(val);
+  }
+  while (distractors.size < 3){
+    const val = correctVal + randInt(1, 30) * (Math.random() < 0.5 ? -1 : 1);
+    if (val > 0 && val !== correctVal && !distractors.has(val)) distractors.add(val);
+  }
+  const options = shuffle([correctVal, ...distractors]);
+  return { text:`${a} + ${b} = ?`, options, correct: options.indexOf(correctVal) };
+}
+
+function buildRound(n){
+  const qs = [];
+  for (let i=0;i<n;i++) qs.push(generateQuestion());
+  return qs;
+}
 
 /* ---------------------------------------------------------------
    STATE
 --------------------------------------------------------------- */
-const STORAGE_KEY = "trivia_vault_state_v1";
+const STORAGE_KEY = "sum_vault_state_v1";
 
 function defaultState(){
   return {
@@ -656,8 +554,6 @@ function applyTheme(){
 applyTheme();
 
 let currentScreen = "home";
-let selectedCategory = null;
-let wasMixedTapped = false;
 let round = null;
 
 /* ---------------------------------------------------------------
@@ -689,46 +585,11 @@ function renderHome(){
   document.getElementById("spin-status-home").textContent =
     canFreeSpin() ? "1 free spin ready" : "Come back tomorrow";
 
-  const hive = document.getElementById("category-hive");
-  hive.innerHTML = "";
-  CATEGORIES.forEach(cat => {
-    const el = document.createElement("div");
-    el.className = "hex" + (selectedCategory === cat.id ? " selected" : "");
-    el.innerHTML = `<span class="emoji">${cat.emoji}</span><span class="name">${cat.name}</span>`;
-    el.onclick = () => {
-      selectedCategory = (selectedCategory === cat.id) ? null : cat.id;
-      wasMixedTapped = false;
-      haptic("light");
-      renderHome();
-    };
-    hive.appendChild(el);
-  });
-
-  const startBtn = document.getElementById("btn-start-home");
-  const label = document.getElementById("start-cat-label");
-  if (selectedCategory){
-    const cat = CATEGORIES.find(c => c.id === selectedCategory);
-    label.textContent = "· " + cat.name;
-    startBtn.style.display = "flex";
-  } else if (wasMixedTapped){
-    label.textContent = "· Mixed";
-    startBtn.style.display = "flex";
-  } else {
-    startBtn.style.display = "none";
-  }
-
   if (pendingShieldToast){
     toast("🛡️ Streak Shield used — your streak is safe!");
     pendingShieldToast = false;
   }
 }
-
-document.getElementById("mixed-mode").onclick = () => {
-  selectedCategory = null;
-  wasMixedTapped = true;
-  haptic("light");
-  renderHome();
-};
 
 /* ---------------------------------------------------------------
    DAILY VAULT (7-day claim ladder)
@@ -776,19 +637,9 @@ function claimVault(){
 /* ---------------------------------------------------------------
    ROUND LOGIC
 --------------------------------------------------------------- */
-function buildQuestionPool(catId){
-  if (catId){
-    return shuffle([...QUESTIONS[catId]]).slice(0, 10).map(q => ({...toQObj(q), category:catId}));
-  }
-  let pool = [];
-  CATEGORIES.forEach(c => { QUESTIONS[c.id].forEach(q => pool.push({...toQObj(q), category:c.id})); });
-  return shuffle(pool).slice(0, 10);
-}
-function toQObj(arr){ return { text:arr[0], options:[...arr[1]], correct:arr[2] }; }
 function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 
 function startRound(){
-  wasMixedTapped = wasMixedTapped && selectedCategory === null;
   let startLives = 3;
   let spareKeyUsed = false;
   if (state.inventory.spareKeys > 0){
@@ -798,7 +649,7 @@ function startRound(){
     saveState();
   }
   round = {
-    questions: buildQuestionPool(selectedCategory),
+    questions: buildRound(10),
     index: 0, score: 0, lives: startLives, correctCount: 0,
     bestStreak: 0, currentStreak: 0, hintUsedThisQ: false,
   };
@@ -815,11 +666,9 @@ const RING_CIRC = 2 * Math.PI * 24;
 function renderQuestion(){
   clearInterval(questionTimerHandle);
   const q = round.questions[round.index];
-  const cat = CATEGORIES.find(c => c.id === q.category);
   round.hintUsedThisQ = false;
   round.timeLeft = QUESTION_SECONDS;
 
-  document.getElementById("quiz-cat-tag").textContent = cat ? cat.name.toUpperCase() : "TRIVIA";
   document.getElementById("quiz-question").textContent = q.text;
   document.getElementById("quiz-qnum").textContent = `Q${round.index+1} / ${round.questions.length}`;
   document.getElementById("quiz-score").textContent = `Score: ${round.score}`;
@@ -1173,8 +1022,8 @@ function openModal(kind){
   const body = document.getElementById("modal-body");
   if (kind === "info"){
     body.innerHTML = `
-      <h3>About Trivia Vault</h3>
-      <p>Every category, the full quiz, the daily vault claim, one free spin a day, and the rewards shop are all free — nothing is ever locked behind an ad.</p>
+      <h3>About Sum Vault</h3>
+      <p>The full quiz, the daily vault claim, one free spin a day, and the rewards shop are all free — nothing is ever locked behind an ad.</p>
       <p>Ads in this app are always optional and always your choice: watch one to unlock a hint, open the bonus chest for double coins, refill your keys after a loss, or grab an extra spin. Skipping an ad never blocks you from continuing — you can always return home or keep playing for free.</p>
       <p>Ads only ever appear when you tap a "watch ad" button yourself — never automatically, and never mid-question.</p>
     `;
@@ -1199,7 +1048,6 @@ function toast(msg){
    BOOT
 --------------------------------------------------------------- */
 initTelegram();
-initAdsgram();
 renderHome();
 </script>
 </body>
