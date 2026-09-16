@@ -384,7 +384,10 @@
 
 /* ---------------------------------------------------------------
    ONCLICKA CONFIG — TMA Rewarded Video
-   AD Code: 464175 ("TMA Rewarded video #1")
+   AD Code: 464175 ("TMA Rewarded video #1") — that's the dashboard
+   label/record ID, NOT the same value as the Spot ID below. OnClicka
+   treats ADCODE-ID and SPOT-ID as distinct values; the SDK call
+   needs the Spot ID specifically.
    Docs: https://onclicka.com/help/publishers/video-how-to-integrate-the-code
 
    initCdTma() resolves with a `show` function once the ad engine is
@@ -398,13 +401,13 @@
    be configured" — that's a dashboard-side setting, separate from
    the id/show() call above, and it isn't covered in their public
    integration doc (which only shows { id }). Every button in this
-   app that can trigger this ad now shares one class,
+   app that can trigger this ad shares one class,
    ".onclicka-tma-trigger" (hint, chest, key refill, bonus spin) —
    put that exact string into the dashboard's "selector" field.
    The id below is also passed defensively in case the SDK itself
    reads it; if it doesn't, it's simply ignored.
 --------------------------------------------------------------- */
-const ONCLICKA_SPOT_ID = "464175";
+const ONCLICKA_SPOT_ID = "6151815";
 const ONCLICKA_TRIGGER_SELECTOR = ".onclicka-tma-trigger";
 
 window.show = null; // populated by initOnClicka() once the engine is ready
