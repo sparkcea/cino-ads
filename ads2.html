@@ -7,8 +7,27 @@
 
 <!-- Telegram Mini Apps SDK (required) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<!-- Adsgram SDK (required for ad monetization) -->
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<!-- RichAds SDK (required for ad monetization) -->
+<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"
+        onerror="console.error('[RichAds] tg-ob.js failed to load — likely blocked by an ad blocker, a network/DNS filter, or the domain being unreachable from this environment. No RichAds ad format can work until this script loads.')"></script>
+<script>
+  (function(){
+    if (typeof TelegramAdsController === "undefined"){
+      console.error("[RichAds] TelegramAdsController is undefined — tg-ob.js did not execute (see the error above, if any). Ad init skipped.");
+      return;
+    }
+    try {
+      window.TelegramAdsController = new TelegramAdsController();
+      window.TelegramAdsController.initialize({
+        pubId: "1016263",
+        appId: "7965",
+      });
+      console.log("[RichAds] TelegramAdsController initialized for pubId 1016263 / appId 7965.");
+    } catch (e){
+      console.error("[RichAds] initialize() threw — check pubId/appId and that this domain is the one registered + verified ('Check connection') in your RichAds dashboard.", e);
+    }
+  })();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,11 +39,11 @@
     --bg-2:#10131e;
     --panel:#161b29;
     --panel-2:#1e2438;
-    --border:rgba(242,184,75,.14);
+    --border:rgba(67,176,92,.16);
 
-    --accent:#f2b84b;
-    --accent-deep:#c98a1f;
-    --accent-glow:rgba(242,184,75,.45);
+    --accent:#43b05c;
+    --accent-deep:#2c7a3f;
+    --accent-glow:rgba(67,176,92,.45);
 
     --gold:#f2b84b;
     --gold-glow:rgba(242,184,75,.5);
@@ -112,6 +131,9 @@
   .action-card .a-txt span{ font-size:10px; color:var(--text-dim); }
 
   /* ---------- Category hive ---------- */
+  .richads-embed-slot{ min-height:0; margin-bottom:0; border-radius:16px; overflow:hidden; transition:min-height .2s ease, margin .2s ease; }
+  .richads-embed-slot:not(:empty){ min-height:60px; margin-bottom:14px; background:var(--panel); border:1px solid var(--border); }
+
   .quiz-intro{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:16px; }
   .quiz-intro .qi-ico{ font-size:30px; }
   .quiz-intro .qi-txt b{ display:block; font-size:14px; }
@@ -253,6 +275,18 @@
 
     <div class="spacer"></div>
 
+    <!--
+      RichAds "embedded banner" slot. Their docs describe this format as
+      sitting in "a specific spot within the interface" (unlike push-style
+      / interstitial, which the network schedules and displays on its own).
+      RichAds hasn't published the exact container markup they scan for,
+      so this is a best-effort, clearly-labelled placement: a reasonably
+      sized, non-intrusive slot that reserves space and won't look broken
+      if nothing fills it. Confirm the required format with RichAds support
+      if it stays empty.
+    -->
+    <div id="richads-embedded-banner" class="richads-embed-slot" data-richads-pubid="1016263" data-richads-appid="7965"></div>
+
     <div class="btn primary" id="btn-start-home" onclick="startRound()">Start Quiz</div>
 
     <div class="footnote">
@@ -377,52 +411,45 @@
 
 <script>
 /* ============================================================
-   SUM VAULT — Telegram Mini App
+   SUM VAULT — Telegram Mini App (V2)
    Single-file build: HTML + CSS + JS
-   Ad network: Adsgram (https://adsgram.ai)
+   Ad network: RichAds (https://richads.com)
    ============================================================ */
 
 /* ---------------------------------------------------------------
-   ADSGRAM CONFIG
-   Block type: Reward (Video). This is a NEW app, so it needs its
-   own Reward block ID from your Adsgram publisher dashboard — the
-   ID from the old quiz app will not work here.
-   Get one at: https://docs.adsgram.ai/publisher/get-block-id
+   RICHADS CONFIG
+   The RichAds TelegramAdsController is already created and
+   initialized in the <head> (pubId 1016263 / appId 7965). Per
+   RichAds' publisher docs, that single tag is enough to serve the
+   passive formats automatically and on its own schedule: push-style,
+   interstitial banner, interstitial video, and embedded banner —
+   there is no separate JS call needed here for those, and no public,
+   documented on-demand "show this ad, tell me when it's done" method
+   for them.
+
+   "Rewarded Ads" — ads tied to a specific action, like the
+   watch-ad-to-earn-coins buttons below — are explicitly called out
+   by RichAds as needing to be configured with your account manager
+   first ("connect your manager or reach out to us"). Until you have
+   that event-related callback from RichAds, showRewardedAd() below
+   safely falls back to "ads unavailable," exactly like it did with
+   the old network, so nothing in the app is ever blocked.
+
+   Once your manager gives you the rewarded method/callback for this
+   pubId/appId, drop it into the marked spot below.
 --------------------------------------------------------------- */
-const ADSGRAM_BLOCK_ID_REWARD = "int-47930";
-
-const ADSGRAM_DEBUG = false; // flip to true only for local testing
-
-let rewardedController = null;
-
-function initAdsgram(){
-  if (!window.Adsgram) { console.warn("Adsgram SDK not loaded (offline / blocked script)."); return; }
-  try {
-    rewardedController = window.Adsgram.init({
-      blockId: ADSGRAM_BLOCK_ID_REWARD,
-      debug: ADSGRAM_DEBUG,
-      debugBannerType: "RewardedVideo"
-    });
-  } catch(e){ console.warn("Adsgram reward init failed", e); }
-}
-
-/**
- * Shows a rewarded ad. onReward fires ONLY if the user watches to completion.
- * onSkip/onError fire otherwise — every optional reward in this app must
- * keep working even if ads are unavailable or skipped.
- */
 function showRewardedAd(onReward, onSkipOrError){
-  if (!rewardedController){
-    toast("Ads unavailable right now — try again later.");
-    onSkipOrError && onSkipOrError();
+  const controller = window.TelegramAdsController;
+  // TODO: replace this feature-detect with the real method name RichAds
+  // gives you for event-related Rewarded Ads once it's configured.
+  if (controller && typeof controller.showRewarded === "function"){
+    controller.showRewarded()
+      .then(() => { onReward && onReward(); })
+      .catch(() => { onSkipOrError && onSkipOrError(); });
     return;
   }
-  rewardedController.show()
-    .then(() => { onReward && onReward(); })
-    .catch((result) => {
-      console.log("Rewarded ad not completed:", result);
-      onSkipOrError && onSkipOrError();
-    });
+  toast("Rewarded ads aren't set up yet — ask your RichAds manager to enable event-related ads.");
+  onSkipOrError && onSkipOrError();
 }
 
 /* ---------------------------------------------------------------
@@ -1048,7 +1075,6 @@ function toast(msg){
    BOOT
 --------------------------------------------------------------- */
 initTelegram();
-initAdsgram();
 renderHome();
 </script>
 </body>
