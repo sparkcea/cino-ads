@@ -308,7 +308,7 @@
     <div class="ad-offer" id="double-coins-offer">
       <div class="ico">🎁</div>
       <div class="txt"><b>Open the Bonus Chest</b><span>Watch a short ad to double your coins — completely optional</span></div>
-      <button class="btn gold small" style="width:auto;" onclick="watchAdDoubleCoins()">Open</button>
+      <button class="btn gold small onclicka-tma-trigger" style="width:auto;" onclick="watchAdDoubleCoins()">Open</button>
     </div>
 
     <div class="btn-row" style="margin-bottom:10px;">
@@ -329,7 +329,7 @@
     <div class="ad-offer">
       <div class="ico">🔑</div>
       <div class="txt"><b>Unlock more keys</b><span>Watch an ad to refill your keys and keep this round going — totally optional</span></div>
-      <button class="btn gold small" style="width:auto;" onclick="watchAdRefillLives()">Unlock</button>
+      <button class="btn gold small onclicka-tma-trigger" style="width:auto;" onclick="watchAdRefillLives()">Unlock</button>
     </div>
 
     <div class="btn-row">
@@ -350,7 +350,7 @@
 
     <div class="spin-actions">
       <button class="btn primary" id="spin-free-btn" onclick="spinFree()">Spin — Free</button>
-      <button class="btn ghost" id="spin-ad-btn" onclick="spinWithAd()">▶️ Bonus spin via ad</button>
+      <button class="btn ghost onclicka-tma-trigger" id="spin-ad-btn" onclick="spinWithAd()">▶️ Bonus spin via ad</button>
     </div>
     <div class="footnote">One free spin daily · up to 3 bonus ad spins per day · never required to play</div>
   </section>
@@ -393,8 +393,19 @@
    wasn't (skipped, no fill, or an error) — same shape as the old
    Adsgram integration, so showRewardedAd() below didn't need to
    change its signature at all.
+
+   OnClicka's dashboard for this AD Code reports "selector needs to
+   be configured" — that's a dashboard-side setting, separate from
+   the id/show() call above, and it isn't covered in their public
+   integration doc (which only shows { id }). Every button in this
+   app that can trigger this ad now shares one class,
+   ".onclicka-tma-trigger" (hint, chest, key refill, bonus spin) —
+   put that exact string into the dashboard's "selector" field.
+   The id below is also passed defensively in case the SDK itself
+   reads it; if it doesn't, it's simply ignored.
 --------------------------------------------------------------- */
 const ONCLICKA_SPOT_ID = "464175";
+const ONCLICKA_TRIGGER_SELECTOR = ".onclicka-tma-trigger";
 
 window.show = null; // populated by initOnClicka() once the engine is ready
 
@@ -403,9 +414,9 @@ function initOnClicka(){
     console.warn("OnClicka SDK not loaded (offline / blocked script).");
     return;
   }
-  window.initCdTma({ id: ONCLICKA_SPOT_ID })
+  window.initCdTma({ id: ONCLICKA_SPOT_ID, selector: ONCLICKA_TRIGGER_SELECTOR })
     .then(show => { window.show = show; console.log("[OnClicka] TMA Rewarded Video ready."); })
-    .catch(e => console.warn("[OnClicka] init failed", e));
+    .catch(e => console.error("[OnClicka] init failed — check that the 'selector' field for AD Code 464175 is set to '.onclicka-tma-trigger' in your OnClicka dashboard, and that this spot is fully approved/active.", e));
 }
 
 /**
@@ -725,7 +736,7 @@ function renderHintRow(){
   } else {
     row.innerHTML = `
       <button class="hint-btn" onclick="useHint('coins')">🔑 50/50 <span class="cost">30🪙</span></button>
-      <button class="hint-btn ad" onclick="useHint('ad')">▶️ Free via ad</button>`;
+      <button class="hint-btn ad onclicka-tma-trigger" onclick="useHint('ad')">▶️ Free via ad</button>`;
   }
 }
 
